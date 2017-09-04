@@ -15,3 +15,6 @@ Arrange your web server to run the program as a WSGI application. Put the databa
 ![28541212-db3ee04a-70c0-11e7-8915-497f638fd01b](https://user-images.githubusercontent.com/29631214/29485252-690aab78-84d7-11e7-940b-615b87a9f251.jpg)
 ### An account page:
 ![28541213-db4139e4-70c0-11e7-903e-c4f71dc3b427](https://user-images.githubusercontent.com/29631214/29485251-690a8d78-84d7-11e7-844d-95527f026758.jpg)
+
+## License
+The program is in the public domain.
