@@ -662,7 +662,7 @@ def ins_xact(environ):
 		if cnx is not None:
 			cnx.close()
 		c = '400 Bad Request'
-		r = "<html><head></head><body><h1>Bad request</h1><h2>{}</h2></h1></body></html>".format(e)
+		r = "<html><head></head><body><h1>Bad request</h1><h2>{}</h2></body></html>".format(e)
 		h = [('Content-type', 'text/html')]
 		return c,r,h
 
@@ -725,7 +725,7 @@ def del_xact(qs):
 		if cnx is not None:
 			cnx.close()
 		c = '400 Bad Request'
-		r = "<html><head></head><body><h1>Bad request</h1><h2>{}</h2></h1></body></html>".format(e)
+		r = "<html><head></head><body><h1>Bad request</h1><h2>{}</h2></body></html>".format(e)
 		h = [('Content-type', 'text/html')]
 		return c,r,h
 
@@ -781,7 +781,7 @@ def creat_acct(qs):
 		if cnx is not None:
 			cnx.close()
 		c = '400 Bad Request'
-		r = "<html><head></head><body><h1>Bad request</h1><h2>{}</h2></h1></body></html>".format(e)
+		r = "<html><head></head><body><h1>Bad request</h1><h2>{}</h2></body></html>".format(e)
 		h = [('Content-type', 'text/html')]
 		return c,r,h
 
@@ -835,7 +835,7 @@ def close_acct(qs):
 		if cnx is not None:
 			cnx.close()
 		c = '400 Bad Request'
-		r = "<html><head></head><body><h1>Bad request</h1><h2>{}</h2></h1></body></html>".format(e)
+		r = "<html><head></head><body><h1>Bad request</h1><h2>{}</h2></body></html>".format(e)
 		h = [('Content-type', 'text/html')]
 		return c,r,h
 
