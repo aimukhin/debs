@@ -54,6 +54,21 @@ def cur2int(s):
 	return int(r + s[i+1:i+3].ljust(2,'0'))
 
 
+def arith(s):
+	"""evaluate string as an arithmetic expression"""
+	try:
+		# normalize string
+		s = s.replace(" ","") # drop spaces
+		s = s.replace(decimal_sep,".") # use . as decimal point
+		# check that string contains only numbers, operators, and brackets
+		for c in s:
+			if not c in "0123456789.+-*/()":
+				raise ValueError
+		# now it's safe to evaluate it
+		return str(eval(s))
+	except:
+		raise ValueError
+
 def int2cur(v):
 	"""convert integer to currency string"""
 	s = str(abs(v))
@@ -565,13 +580,13 @@ def ins_xact(environ):
 		if dr == '':
 			dr = '0'
 		try:
-			dr = cur2int(dr)
+			dr = cur2int(arith(dr))
 		except ValueError:
 			raise ValueError("Bad Dr")
 		if cr == '':
 			cr = '0'
 		try:
-			cr = cur2int(cr)
+			cr = cur2int(arith(cr))
 		except ValueError:
 			raise ValueError("Bad Cr")
 		if dr < 0 or cr < 0:
@@ -582,7 +597,7 @@ def ins_xact(environ):
 			if newbal == '':
 				raise ValueError("Set either Dr or Cr, or Balance")
 			try:
-				newbal = cur2int(newbal)
+				newbal = cur2int(arith(newbal))
 			except ValueError:
 				raise ValueError("Bad Balance")
 		# Check accounts
