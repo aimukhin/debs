@@ -674,14 +674,14 @@ def creat_acct(crs,qs):
 	# Get arguments
 	q = parse_qs(qs,keep_blank_values=True)
 	try:
-		type = q['type'][0]
+		atype = q['type'][0]
 		name = q['name'][0]
 	except KeyError:
 		raise ValueError("Wrong access")
 	# Check arguments
-	if type=='':
+	if atype=='':
 		raise ValueError("Please select the account type")
-	if not type in [x for x,_ in atypes]:
+	if not atype in [x for x,_ in atypes]:
 		raise ValueError("Wrong account type")
 	if name=='':
 		raise ValueError("Please set the account name")
@@ -690,7 +690,7 @@ def creat_acct(crs,qs):
 		raise ValueError("Account with the same name already exists")
 	# Create account
 	odt = date.today().toordinal()
-	crs.execute("INSERT INTO accts VALUES (NULL,?,?,?,0)",[type,name,odt])
+	crs.execute("INSERT INTO accts VALUES (NULL,?,?,?,0)",[atype,name,odt])
 	# Return redirect
 	c = '303 See Other'
 	r = ""
