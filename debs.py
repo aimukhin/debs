@@ -90,13 +90,17 @@ def int2cur(v):
 		r = "&minus;"+r
 	return r
 
+def res(crs):
+	"""return the only result of a transaction"""
+	return crs.fetchone()[0]
+
 def balance(crs,aid):
 	"""returns the current balance of account aid"""
 	crs.execute("SELECT max(xid) FROM xacts WHERE aid=?",[aid])
-	maxxid = crs.fetchone()[0]
+	maxxid = res(crs)
 	if maxxid is not None:
 		crs.execute("SELECT bal FROM xacts WHERE xid=? and aid=?",[maxxid,aid])
-		return int(crs.fetchone()[0])
+		return int(res(crs))
 	else:
 		return 0
 
@@ -224,7 +228,7 @@ def acct(crs,qs):
 	except KeyError:
 		raise ValueError("Wrong access")
 	crs.execute("SELECT COUNT(*) FROM accts WHERE aid=?",[aid])
-	if crs.fetchone()[0]==0:
+	if res(crs)==0:
 		raise ValueError("Bad aid")
 	# Get optional argument
 	if 'hlxid' in q:
@@ -233,14 +237,14 @@ def acct(crs,qs):
 		hlxid = None
 	# Get commonly used account properties
 	crs.execute("SELECT name,odt,cdt FROM accts WHERE aid=?",[aid])
-	(name,odt,cdt) = crs.fetchone()
+	name,odt,cdt = crs.fetchone()
 	bal = balance(crs,aid)
 	crs.execute("SELECT MAX(dt) FROM xacts WHERE aid=?",[aid])
-	maxdt = crs.fetchone()[0]
+	maxdt = res(crs)
 	if maxdt is None:
 		maxdt = 0
 	crs.execute("SELECT MAX(xid) FROM xacts WHERE aid=?",[aid])
-	maxxid = crs.fetchone()[0]
+	maxxid = res(crs)
 	if maxxid is None:
 		maxxid = 0
 	# Find the statement period
@@ -458,7 +462,7 @@ def acct(crs,qs):
 		prev_year = x_year
 		prev_month = x_month
 		crs.execute("SELECT type,name FROM accts WHERE aid=?",[oaid])
-		(oatype,oaname) = crs.fetchone()
+		oatype,oaname = crs.fetchone()
 		r += """
 		<tr>
 		<td colspan=7 bgcolor="{}"></td>
@@ -475,7 +479,7 @@ def acct(crs,qs):
 		# We can delete the transaction if it is the last one for both aid and oaid
 		if xid==maxxid:
 			crs.execute("SELECT MAX(xid) FROM xacts WHERE aid=?",[oaid])
-			if xid==crs.fetchone()[0]:
+			if xid==res(crs):
 				r += """
 				<a style='color:red; font-weight: bold; text-decoration:none'
 				href='del_xact?xid={}&amp;aid={}'
@@ -569,31 +573,31 @@ def ins_xact(crs,environ):
 	if aid==oaid:
 		raise ValueError("Transaction with the same account")
 	crs.execute("SELECT COUNT(aid) FROM accts WHERE aid=? AND cdt=0",[aid])
-	if crs.fetchone()[0]==0:
+	if res(crs)==0:
 		raise ValueError("Non-existent aid")
 	crs.execute("SELECT COUNT(aid) FROM accts WHERE aid=? AND cdt=0",[oaid])
-	if crs.fetchone()[0]==0:
+	if res(crs)==0:
 		raise ValueError("Non-existent oaid")
 	if dt>date.today().toordinal():
 		raise ValueError("Date cannot be in the future")
 	crs.execute("SELECT odt FROM accts WHERE aid=?",[aid])
-	if dt<crs.fetchone()[0]:
+	if dt<res(crs):
 		raise ValueError("Date before the account's opening date")
 	crs.execute("SELECT odt FROM accts WHERE aid=?",[oaid])
-	if dt<crs.fetchone()[0]:
+	if dt<res(crs):
 		raise ValueError("Date before the opposing account's opening date")
 	crs.execute("SELECT COUNT(*) FROM xacts WHERE aid=? AND dt>?",[aid,dt])
-	if crs.fetchone()[0]!=0:
+	if res(crs)!=0:
 		raise ValueError("Current account has newer transactions")
 	crs.execute("SELECT COUNT(*) FROM xacts WHERE aid=? AND dt>?",[oaid,dt])
-	if crs.fetchone()[0]!=0:
+	if res(crs)!=0:
 		raise ValueError("Opposing account has newer transactions")
 	# Input data OK, prepare to insert transaction
 	# Get account types
 	crs.execute("SELECT type FROM accts WHERE aid=?",[aid])
-	atype = crs.fetchone()[0]
+	atype = res(crs)
 	crs.execute("SELECT type FROM accts WHERE aid=?",[oaid])
-	oatype = crs.fetchone()[0]
+	oatype = res(crs)
 	# Get account balances
 	bal = balance(crs,aid)
 	obal = balance(crs,oaid)
@@ -617,7 +621,7 @@ def ins_xact(crs,environ):
 	onewbal = new_balance(oatype,obal,cr,dr)
 	# Insert transaction
 	crs.execute("SELECT MAX(xid) FROM xacts")
-	maxxid = crs.fetchone()[0]
+	maxxid = res(crs)
 	if maxxid is None:
 		xid = 0
 	else:
@@ -641,21 +645,21 @@ def del_xact(crs,qs):
 		raise ValueError("Wrong access")
 	# Check accounts
 	crs.execute("SELECT COUNT(aid) FROM accts WHERE aid=? AND cdt=0",[aid])
-	if crs.fetchone()[0]==0:
+	if res(crs)==0:
 		raise ValueError("Bad aid")
 	crs.execute("SELECT COUNT(*) FROM xacts WHERE xid=? AND aid=?",[xid,aid])
-	if crs.fetchone()[0]==0:
+	if res(crs)==0:
 		raise ValueError("Bad xid")
 	crs.execute("SELECT oaid FROM xacts WHERE xid=? AND aid=?",[xid,aid])
-	oaid = crs.fetchone()[0]
+	oaid = res(crs)
 	crs.execute("SELECT COUNT(aid) FROM accts WHERE aid=? AND cdt=0",[oaid])
-	if crs.fetchone()[0]==0:
+	if res(crs)==0:
 		raise ValueError("Bad oaid")
 	crs.execute("SELECT COUNT(*) FROM xacts WHERE xid>? AND aid=?",[xid,aid])
-	if crs.fetchone()[0]!=0:
+	if res(crs)!=0:
 		raise ValueError("Current account has newer transactions")
 	crs.execute("SELECT COUNT(*) FROM xacts WHERE xid>? AND aid=?",[xid,oaid])
-	if crs.fetchone()[0]!=0:
+	if res(crs)!=0:
 		raise ValueError("Opposing account has newer transactions")
 	# Delete transaction
 	crs.execute("DELETE FROM xacts WHERE xid=?",[xid])
@@ -682,7 +686,7 @@ def creat_acct(crs,qs):
 	if name=='':
 		raise ValueError("Please set the account name")
 	crs.execute("SELECT COUNT(*) FROM accts WHERE name=?",[name])
-	if crs.fetchone()[0]!=0:
+	if res(crs)!=0:
 		raise ValueError("Account with the same name already exists")
 	# Create account
 	odt = date.today().toordinal()
@@ -703,10 +707,10 @@ def close_acct(crs,qs):
 		raise ValueError("Wrong access")
 	# Check argument
 	crs.execute("SELECT COUNT(*) FROM accts WHERE aid=?",[aid])
-	if crs.fetchone()[0]==0:
+	if res(crs)==0:
 		raise ValueError("Wrong aid")
 	crs.execute("SELECT cdt FROM accts WHERE aid=?",[aid])
-	if crs.fetchone()[0]!=0:
+	if res(crs)!=0:
 		raise ValueError("Account already closed")
 	if balance(crs,aid)!=0:
 		raise ValueError("Non-zero balance")
