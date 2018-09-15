@@ -259,6 +259,11 @@ def acct(qs):
 		r = "<html><head></head><body><h1>Bad request</h1><h2>{}</h2></body></html>".format(e)
 		return c,r
 
+	# Get optional argument
+	if 'hlxid' in q:
+		hlxid = int(q['hlxid'][0])
+	else:
+		hlxid = None
 
 	# Get commonly used account properties
 	crs.execute("SELECT name,odt,cdt FROM accts WHERE aid=?", [aid])
@@ -458,7 +463,7 @@ def acct(qs):
 
 	# Past transactions
 	r += """
-	<table width="100%">
+	<table width="100%" style="border-spacing: 0 2px;">
 	<tr>
 	<td width="15%"></td>
 	<td width="10%"></td>
@@ -487,6 +492,12 @@ def acct(qs):
 			sep_bgcolor = "#c0c0c0"
 		else:
 			sep_bgcolor = "#f0f0f0"
+		if xid == hlxid:
+			hl_bgcolor = 'bgcolor="#ffff80"'
+			anchor = "<a id=hl></a>"
+		else:
+			hl_bgcolor = ""
+			anchor = ""
 		prev_year = x_year
 		prev_month = x_month
 		crs.execute("SELECT type,name FROM accts WHERE aid=?", [oaid])
@@ -495,15 +506,15 @@ def acct(qs):
 		<tr>
 		<td colspan=7 bgcolor="{}"></td>
 		</tr>
-		<tr style="white-space: nowrap;">
+		<tr style="white-space: nowrap;" {}>
 		<td>{}</td>
 		<td align=right>{}</td>
 		<td align=right>{}</td>
 		<td align=right>{}</td>
-		<td align=right><font color="#c0c0c0">{}</font>&nbsp;<a href="acct?aid={}">{}</a></td>
-		<td align=left>&nbsp;<small>{}</small></td>
+		<td align=right><font color="#c0c0c0">{}</font>&nbsp;<a href="acct?aid={}&amp;hlxid={}#hl">{}</a></td>
+		<td align=left>&nbsp;<small>{}</small>{}</td>
 		<td>
-		""".format(sep_bgcolor, dt_d, dr, cr, x_bal, oatype, oaid, oaname, comment)
+		""".format(sep_bgcolor, hl_bgcolor, dt_d, dr, cr, x_bal, oatype, oaid, xid, oaname, comment, anchor)
 		# We can delete the transaction if it is the last one for both aid and oaid
 		if xid == maxxid:
 			crs.execute("SELECT MAX(xid) FROM xacts WHERE aid=?", [oaid])
