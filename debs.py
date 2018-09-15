@@ -11,24 +11,40 @@ import sqlite3
 from datetime import date
 
 def application(environ,start_response):
-	"""main selector"""
-	p = environ['PATH_INFO']
-	qs = environ['QUERY_STRING']
-	h = [('Content-type','text/html')]
-	if p=="/":
-		c,r = main()
-	elif p=="/acct":
-		c,r = acct(qs)
-	elif p=="/ins_xact":
-		c,r,h = ins_xact(environ)
-	elif p=="/del_xact":
-		c,r,h = del_xact(qs)
-	elif p=="/creat_acct":
-		c,r,h = creat_acct(qs)
-	elif p=="/close_acct":
-		c,r,h = close_acct(qs)
-	else:
-		c,r = err(p)
+	"""entry point"""
+	try:
+		p = environ['PATH_INFO']
+		qs = environ['QUERY_STRING']
+		h = [('Content-type','text/html')]
+		# Connect to the database
+		cnx = None
+		cnx = sqlite3.connect(db)
+		crs = cnx.cursor()
+		# Main selector
+		if p=="/":
+			c,r = main(crs)
+		elif p=="/acct":
+			c,r = acct(crs,qs)
+		elif p=="/ins_xact":
+			c,r,h = ins_xact(crs,environ)
+		elif p=="/del_xact":
+			c,r,h = del_xact(crs,qs)
+		elif p=="/creat_acct":
+			c,r,h = creat_acct(crs,qs)
+		elif p=="/close_acct":
+			c,r,h = close_acct(crs,qs)
+		else:
+			raise ValueError("Wrong access")
+	except ValueError as e:
+		c = '400 Bad Request'
+		r = "<html><head></head><body><h1>Bad request</h1><h2>{}</h2></body></html>".format(e)
+	except sqlite3.Error as e:
+		c = '500 Internal Server Error'
+		r = "<html><head></head><body><h1>Database error</h1><h2>{}</h2></body></html>".format(e)
+	finally:
+		if cnx:
+			cnx.commit()
+			cnx.close()
 	start_response(c,h)
 	return [r.encode()]
 
@@ -93,16 +109,8 @@ def new_balance(atype,bal,dr,cr):
 	else:
 		raise ValueError("Bad account type")
 
-def main():
+def main(crs):
 	"""show main page"""
-	# Connect to the database
-	try:
-		cnx = sqlite3.connect(db)
-	except sqlite3.Error as e:
-		c = '500 Internal Server Error'
-		r = "<html><head></head><body><h1>Database error</h1><h2>{}</h2></body></html>".format(e)
-		return c,r
-	crs = cnx.cursor()
 	# Caption
 	r = """
 	<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
@@ -154,7 +162,6 @@ def main():
 	for atc in ('A','e'):
 		v -= totals[atc]
 	if v!=0:
-		cnx.close()
 		c = '200 OK'
 		r = """
 		<html><head></head><body>
@@ -203,37 +210,22 @@ def main():
 	</body>
 	</html>
 	"""
-	# Clean up and return
-	cnx.close()
+	# Return success
 	c = '200 OK'
 	return c,r
 
-def acct(qs):
+def acct(crs,qs):
 	"""show account statement page"""
-	# Connect to the database
-	try:
-		cnx = sqlite3.connect(db)
-	except sqlite3.Error as e:
-		c = '500 Internal Server Error'
-		r = "<html><head></head><body><h1>Database error</h1><h2>{}</h2></body></html>".format(e)
-		return c,r
-	crs = cnx.cursor()
 	# Get arguments
 	q = parse_qs(qs)
 	# Check the mandatory argument
 	try:
-		try:
-			aid = q['aid'][0]
-		except KeyError:
-			raise ValueError("Wrong access")
-		crs.execute("SELECT COUNT(*) FROM accts WHERE aid=?",[aid])
-		if crs.fetchone()[0]==0:
-			raise ValueError("Bad aid")
-	except ValueError as e:
-		cnx.close()
-		c = '400 Bad Request'
-		r = "<html><head></head><body><h1>Bad request</h1><h2>{}</h2></body></html>".format(e)
-		return c,r
+		aid = q['aid'][0]
+	except KeyError:
+		raise ValueError("Wrong access")
+	crs.execute("SELECT COUNT(*) FROM accts WHERE aid=?",[aid])
+	if crs.fetchone()[0]==0:
+		raise ValueError("Bad aid")
 	# Get optional argument
 	if 'hlxid' in q:
 		hlxid = int(q['hlxid'][0])
@@ -514,302 +506,215 @@ def acct(qs):
 	</body>
 	</html>
 	"""
-	# Clean up and return
-	cnx.close()
+	# Return success
 	c = '200 OK'
 	return c,r
 
-def ins_xact(environ):
+def ins_xact(crs,environ):
 	"""insert a new transaction"""
+	# Get arguments
 	try:
-		cnx = None
-		cnx = sqlite3.connect(db)
-		crs = cnx.cursor()
-		# Get arguments
+		q = parse_qs(environ['wsgi.input'].readline().decode(),keep_blank_values=True)
+		yyyy = q['yyyy'][0]
+		mm = q['mm'][0]
+		dd = q['dd'][0]
+		dr = q['dr'][0]
+		cr = q['cr'][0]
+		newbal = q['newbal'][0]
+		aid = q['aid'][0]
+		oaid = q['oaid'][0]
+		comment = q['comment'][0]
+	except KeyError:
+		raise ValueError("Wrong access")
+	# Check date
+	try:
+		dt = date(int(yyyy),int(mm),int(dd)).toordinal()
+	except ValueError:
+		raise ValueError("Bad date")
+	# Check transaction values
+	if dr=='':
+		dr = '0'
+	try:
+		dr = cur2int(arith(dr))
+	except ValueError:
+		raise ValueError("Bad Dr")
+	if cr=='':
+		cr = '0'
+	try:
+		cr = cur2int(arith(cr))
+	except ValueError:
+		raise ValueError("Bad Cr")
+	if dr<0 or cr<0:
+		raise ValueError("Dr and Cr cannot be negative")
+	if dr!=0 and cr!=0:
+		raise ValueError("Dr and Cr cannot both be set")
+	if dr==0 and cr==0:
+		if newbal=='':
+			raise ValueError("Set either Dr or Cr, or Balance")
 		try:
-			q = parse_qs(environ['wsgi.input'].readline().decode(),keep_blank_values=True)
-			yyyy = q['yyyy'][0]
-			mm = q['mm'][0]
-			dd = q['dd'][0]
-			dr = q['dr'][0]
-			cr = q['cr'][0]
-			newbal = q['newbal'][0]
-			aid = q['aid'][0]
-			oaid = q['oaid'][0]
-			comment = q['comment'][0]
-		except KeyError:
-			raise ValueError("Wrong access")
-		# Check date
-		try:
-			dt = date(int(yyyy),int(mm),int(dd)).toordinal()
+			newbal = cur2int(arith(newbal))
 		except ValueError:
-			raise ValueError("Bad date")
-		# Check transaction values
-		if dr=='':
-			dr = '0'
-		try:
-			dr = cur2int(arith(dr))
-		except ValueError:
-			raise ValueError("Bad Dr")
-		if cr=='':
-			cr = '0'
-		try:
-			cr = cur2int(arith(cr))
-		except ValueError:
-			raise ValueError("Bad Cr")
-		if dr<0 or cr<0:
-			raise ValueError("Dr and Cr cannot be negative")
-		if dr!=0 and cr!=0:
-			raise ValueError("Dr and Cr cannot both be set")
-		if dr==0 and cr==0:
-			if newbal=='':
-				raise ValueError("Set either Dr or Cr, or Balance")
-			try:
-				newbal = cur2int(arith(newbal))
-			except ValueError:
-				raise ValueError("Bad Balance")
-		# Check accounts
-		if oaid=='':
-			raise ValueError("Please select the opposing account")
-		try:
-			aid = int(aid)
-		except ValueError:
-			raise ValueError("Bad aid")
-		try:
-			oaid = int(oaid)
-		except ValueError:
-			raise ValueError("Bad oaid")
-		if aid==oaid:
-			raise ValueError("Transaction with the same account")
-		crs.execute("SELECT COUNT(aid) FROM accts WHERE aid=? AND cdt=0",[aid])
-		if crs.fetchone()[0]==0:
-			raise ValueError("Non-existent aid")
-		crs.execute("SELECT COUNT(aid) FROM accts WHERE aid=? AND cdt=0",[oaid])
-		if crs.fetchone()[0]==0:
-			raise ValueError("Non-existent oaid")
-		if dt>date.today().toordinal():
-			raise ValueError("Date cannot be in the future")
-		crs.execute("SELECT odt FROM accts WHERE aid=?",[aid])
-		if dt<crs.fetchone()[0]:
-			raise ValueError("Date before the account's opening date")
-		crs.execute("SELECT odt FROM accts WHERE aid=?",[oaid])
-		if dt<crs.fetchone()[0]:
-			raise ValueError("Date before the opposing account's opening date")
-		crs.execute("SELECT COUNT(*) FROM xacts WHERE aid=? AND dt>?",[aid,dt])
-		if crs.fetchone()[0]!=0:
-			raise ValueError("Current account has newer transactions")
-		crs.execute("SELECT COUNT(*) FROM xacts WHERE aid=? AND dt>?",[oaid,dt])
-		if crs.fetchone()[0]!=0:
-			raise ValueError("Opposing account has newer transactions")
-		# Input data OK, prepare to insert transaction
-		# Get account types
-		crs.execute("SELECT type FROM accts WHERE aid=?",[aid])
-		atype = crs.fetchone()[0]
-		crs.execute("SELECT type FROM accts WHERE aid=?",[oaid])
-		oatype = crs.fetchone()[0]
-		# Get account balances
-		bal = balance(crs,aid)
-		obal = balance(crs,oaid)
-		if dr==0 and cr==0:
-			# Derive dr and cr from new and old balances
-			if atype in ('E','L','i'):
-				if newbal>bal:
-					cr = newbal-bal
-				else:
-					dr = bal-newbal
-			elif atype in ('A','e'):
-				if newbal>bal:
-					dr = newbal-bal
-				else:
-					cr = bal-newbal
+			raise ValueError("Bad Balance")
+	# Check accounts
+	if oaid=='':
+		raise ValueError("Please select the opposing account")
+	try:
+		aid = int(aid)
+	except ValueError:
+		raise ValueError("Bad aid")
+	try:
+		oaid = int(oaid)
+	except ValueError:
+		raise ValueError("Bad oaid")
+	if aid==oaid:
+		raise ValueError("Transaction with the same account")
+	crs.execute("SELECT COUNT(aid) FROM accts WHERE aid=? AND cdt=0",[aid])
+	if crs.fetchone()[0]==0:
+		raise ValueError("Non-existent aid")
+	crs.execute("SELECT COUNT(aid) FROM accts WHERE aid=? AND cdt=0",[oaid])
+	if crs.fetchone()[0]==0:
+		raise ValueError("Non-existent oaid")
+	if dt>date.today().toordinal():
+		raise ValueError("Date cannot be in the future")
+	crs.execute("SELECT odt FROM accts WHERE aid=?",[aid])
+	if dt<crs.fetchone()[0]:
+		raise ValueError("Date before the account's opening date")
+	crs.execute("SELECT odt FROM accts WHERE aid=?",[oaid])
+	if dt<crs.fetchone()[0]:
+		raise ValueError("Date before the opposing account's opening date")
+	crs.execute("SELECT COUNT(*) FROM xacts WHERE aid=? AND dt>?",[aid,dt])
+	if crs.fetchone()[0]!=0:
+		raise ValueError("Current account has newer transactions")
+	crs.execute("SELECT COUNT(*) FROM xacts WHERE aid=? AND dt>?",[oaid,dt])
+	if crs.fetchone()[0]!=0:
+		raise ValueError("Opposing account has newer transactions")
+	# Input data OK, prepare to insert transaction
+	# Get account types
+	crs.execute("SELECT type FROM accts WHERE aid=?",[aid])
+	atype = crs.fetchone()[0]
+	crs.execute("SELECT type FROM accts WHERE aid=?",[oaid])
+	oatype = crs.fetchone()[0]
+	# Get account balances
+	bal = balance(crs,aid)
+	obal = balance(crs,oaid)
+	if dr==0 and cr==0:
+		# Derive dr and cr from new and old balances
+		if atype in ('E','L','i'):
+			if newbal>bal:
+				cr = newbal-bal
 			else:
-				raise ValueError("Bad account type")
+				dr = bal-newbal
+		elif atype in ('A','e'):
+			if newbal>bal:
+				dr = newbal-bal
+			else:
+				cr = bal-newbal
 		else:
-			newbal = new_balance(atype,bal,dr,cr)
-		# Compute new balance of the opposing account, with dr and cr exchanged
-		onewbal = new_balance(oatype,obal,cr,dr)
-		# Insert transaction
-		crs.execute("SELECT MAX(xid) FROM xacts")
-		maxxid = crs.fetchone()[0]
-		if maxxid is None:
-			xid = 0
-		else:
-			xid = maxxid+1
-		crs.execute("INSERT INTO xacts VALUES(?,?,?,?,?,?,?,?)",[xid,dt,aid,oaid,str(dr),str(cr),str(newbal),comment])
-		crs.execute("INSERT INTO xacts VALUES(?,?,?,?,?,?,?,?)",[xid,dt,oaid,aid,str(cr),str(dr),str(onewbal),comment])
-		cnx.commit()
-	except ValueError as e:
-		if cnx is not None:
-			cnx.close()
-		c = '400 Bad Request'
-		r = "<html><head></head><body><h1>Bad request</h1><h2>{}</h2></body></html>".format(e)
-		h = [('Content-type','text/html')]
-		return c,r,h
-	except sqlite3.Error as e:
-		if cnx is not None:
-			cnx.close()
-		c = '500 Internal Server Error'
-		r = "<html><head></head><body><h1>Database error</h1><h2>{}</h2></body></html>".format(e)
-		h = [('Content-type','text/html')]
-		return c,r,h
-	# Clean up and return redirect
-	cnx.close()
+			raise ValueError("Bad account type")
+	else:
+		newbal = new_balance(atype,bal,dr,cr)
+	# Compute new balance of the opposing account, with dr and cr exchanged
+	onewbal = new_balance(oatype,obal,cr,dr)
+	# Insert transaction
+	crs.execute("SELECT MAX(xid) FROM xacts")
+	maxxid = crs.fetchone()[0]
+	if maxxid is None:
+		xid = 0
+	else:
+		xid = maxxid+1
+	crs.execute("INSERT INTO xacts VALUES(?,?,?,?,?,?,?,?)",[xid,dt,aid,oaid,str(dr),str(cr),str(newbal),comment])
+	crs.execute("INSERT INTO xacts VALUES(?,?,?,?,?,?,?,?)",[xid,dt,oaid,aid,str(cr),str(dr),str(onewbal),comment])
+	# Return redirect
 	c = '303 See Other'
 	r = ""
 	h = [('Location',"acct?aid={}".format(aid))]
 	return c,r,h
 
-def del_xact(qs):
+def del_xact(crs,qs):
 	"""delete transaction"""
+	# Get arguments
+	q = parse_qs(qs)
 	try:
-		cnx = None
-		cnx = sqlite3.connect(db)
-		crs = cnx.cursor()
-		# Get arguments
-		q = parse_qs(qs)
-		try:
-			xid = q['xid'][0]
-			aid = q['aid'][0]
-		except KeyError:
-			raise ValueError("Wrong access")
-		# Check accounts
-		crs.execute("SELECT COUNT(aid) FROM accts WHERE aid=? AND cdt=0",[aid])
-		if crs.fetchone()[0]==0:
-			raise ValueError("Bad aid")
-		crs.execute("SELECT COUNT(*) FROM xacts WHERE xid=? AND aid=?",[xid,aid])
-		if crs.fetchone()[0]==0:
-			raise ValueError("Bad xid")
-		crs.execute("SELECT oaid FROM xacts WHERE xid=? AND aid=?",[xid,aid])
-		oaid = crs.fetchone()[0]
-		crs.execute("SELECT COUNT(aid) FROM accts WHERE aid=? AND cdt=0",[oaid])
-		if crs.fetchone()[0]==0:
-			raise ValueError("Bad oaid")
-		crs.execute("SELECT COUNT(*) FROM xacts WHERE xid>? AND aid=?",[xid,aid])
-		if crs.fetchone()[0]!=0:
-			raise ValueError("Current account has newer transactions")
-		crs.execute("SELECT COUNT(*) FROM xacts WHERE xid>? AND aid=?",[xid,oaid])
-		if crs.fetchone()[0]!=0:
-			raise ValueError("Opposing account has newer transactions")
-
-		# Delete transaction
-		crs.execute("DELETE FROM xacts WHERE xid=?",[xid])
-		cnx.commit()
-	except ValueError as e:
-		if cnx is not None:
-			cnx.close()
-		c = '400 Bad Request'
-		r = "<html><head></head><body><h1>Bad request</h1><h2>{}</h2></body></html>".format(e)
-		h = [('Content-type','text/html')]
-		return c,r,h
-	except sqlite3.Error as e:
-		if cnx is not None:
-			cnx.close()
-		c = '500 Internal Server Error'
-		r = "<html><head></head><body><h1>Database error</h1><h2>{}</h2></body></html>".format(e)
-		h = [('Content-type','text/html')]
-		return c,r,h
-	# Clean up and return redirect
-	cnx.close()
+		xid = q['xid'][0]
+		aid = q['aid'][0]
+	except KeyError:
+		raise ValueError("Wrong access")
+	# Check accounts
+	crs.execute("SELECT COUNT(aid) FROM accts WHERE aid=? AND cdt=0",[aid])
+	if crs.fetchone()[0]==0:
+		raise ValueError("Bad aid")
+	crs.execute("SELECT COUNT(*) FROM xacts WHERE xid=? AND aid=?",[xid,aid])
+	if crs.fetchone()[0]==0:
+		raise ValueError("Bad xid")
+	crs.execute("SELECT oaid FROM xacts WHERE xid=? AND aid=?",[xid,aid])
+	oaid = crs.fetchone()[0]
+	crs.execute("SELECT COUNT(aid) FROM accts WHERE aid=? AND cdt=0",[oaid])
+	if crs.fetchone()[0]==0:
+		raise ValueError("Bad oaid")
+	crs.execute("SELECT COUNT(*) FROM xacts WHERE xid>? AND aid=?",[xid,aid])
+	if crs.fetchone()[0]!=0:
+		raise ValueError("Current account has newer transactions")
+	crs.execute("SELECT COUNT(*) FROM xacts WHERE xid>? AND aid=?",[xid,oaid])
+	if crs.fetchone()[0]!=0:
+		raise ValueError("Opposing account has newer transactions")
+	# Delete transaction
+	crs.execute("DELETE FROM xacts WHERE xid=?",[xid])
+	# Return redirect
 	c = '303 See Other'
 	r = ""
 	h = [('Location',"acct?aid={}".format(aid))]
 	return c,r,h
 
-def creat_acct(qs):
+def creat_acct(crs,qs):
 	"""create a new account"""
+	# Get arguments
+	q = parse_qs(qs,keep_blank_values=True)
 	try:
-		cnx = None
-		cnx = sqlite3.connect(db)
-		crs = cnx.cursor()
-		# Get arguments
-		q = parse_qs(qs,keep_blank_values=True)
-		try:
-			type = q['type'][0]
-			name = q['name'][0]
-		except KeyError:
-			raise ValueError("Wrong access")
-		# Check arguments
-		if type=='':
-			raise ValueError("Please select the account type")
-		if not type in [x for x,_ in atypes]:
-			raise ValueError("Wrong account type")
-		if name=='':
-			raise ValueError("Please set the account name")
-		crs.execute("SELECT COUNT(*) FROM accts WHERE name=?",[name])
-		if crs.fetchone()[0]!=0:
-			raise ValueError("Account with the same name already exists")
-		# Create account
-		odt = date.today().toordinal()
-		crs.execute("INSERT INTO accts VALUES (NULL,?,?,?,0)",[type,name,odt])
-		cnx.commit()
-	except ValueError as e:
-		if cnx is not None:
-			cnx.close()
-		c = '400 Bad Request'
-		r = "<html><head></head><body><h1>Bad request</h1><h2>{}</h2></body></html>".format(e)
-		h = [('Content-type','text/html')]
-		return c,r,h
-	except sqlite3.Error as e:
-		if cnx is not None:
-			cnx.close()
-		c = '500 Internal Server Error'
-		r = "<html><head></head><body><h1>Database error</h1><h2>{}</h2></body></html>".format(e)
-		h = [('Content-type','text/html')]
-		return c,r,h
-	# Clean up and return redirect
-	cnx.close()
+		type = q['type'][0]
+		name = q['name'][0]
+	except KeyError:
+		raise ValueError("Wrong access")
+	# Check arguments
+	if type=='':
+		raise ValueError("Please select the account type")
+	if not type in [x for x,_ in atypes]:
+		raise ValueError("Wrong account type")
+	if name=='':
+		raise ValueError("Please set the account name")
+	crs.execute("SELECT COUNT(*) FROM accts WHERE name=?",[name])
+	if crs.fetchone()[0]!=0:
+		raise ValueError("Account with the same name already exists")
+	# Create account
+	odt = date.today().toordinal()
+	crs.execute("INSERT INTO accts VALUES (NULL,?,?,?,0)",[type,name,odt])
+	# Return redirect
 	c = '303 See Other'
 	r = ""
 	h = [('Location',".")]
 	return c,r,h
 
-def close_acct(qs):
+def close_acct(crs,qs):
 	"""close account"""
+	# Get argument
+	q = parse_qs(qs)
 	try:
-		cnx = None
-		cnx = sqlite3.connect(db)
-		crs = cnx.cursor()
-		# Get argument
-		q = parse_qs(qs)
-		try:
-			aid = q['aid'][0]
-		except KeyError:
-			raise ValueError("Wrong access")
-		# Check argument
-		crs.execute("SELECT COUNT(*) FROM accts WHERE aid=?",[aid])
-		if crs.fetchone()[0]==0:
-			raise ValueError("Wrong aid")
-		crs.execute("SELECT cdt FROM accts WHERE aid=?",[aid])
-		if crs.fetchone()[0]!=0:
-			raise ValueError("Account already closed")
-		if balance(crs,aid)!=0:
-			raise ValueError("Non-zero balance")
-		# Close account
-		now = date.today().toordinal()
-		crs.execute("UPDATE accts SET cdt=? WHERE aid=?",[now,aid])
-		cnx.commit()
-	except ValueError as e:
-		if cnx is not None:
-			cnx.close()
-		c = '400 Bad Request'
-		r = "<html><head></head><body><h1>Bad request</h1><h2>{}</h2></body></html>".format(e)
-		h = [('Content-type','text/html')]
-		return c,r,h
-	except sqlite3.Error as e:
-		if cnx is not None:
-			cnx.close()
-		c = '500 Internal Server Error'
-		r = "<html><head></head><body><h1>Database error</h1><h2>{}</h2></body></html>".format(e)
-		h = [('Content-type','text/html')]
-		return c,r,h
-	# Clean up and return redirect
-	cnx.close()
+		aid = q['aid'][0]
+	except KeyError:
+		raise ValueError("Wrong access")
+	# Check argument
+	crs.execute("SELECT COUNT(*) FROM accts WHERE aid=?",[aid])
+	if crs.fetchone()[0]==0:
+		raise ValueError("Wrong aid")
+	crs.execute("SELECT cdt FROM accts WHERE aid=?",[aid])
+	if crs.fetchone()[0]!=0:
+		raise ValueError("Account already closed")
+	if balance(crs,aid)!=0:
+		raise ValueError("Non-zero balance")
+	# Close account
+	now = date.today().toordinal()
+	crs.execute("UPDATE accts SET cdt=? WHERE aid=?",[now,aid])
+	# Return redirect
 	c = '303 See Other'
 	r = ""
 	h = [('Location',"acct?aid={}".format(aid))]
 	return c,r,h
-
-def err(p):
-	c = '404 Not Found'
-	r = "<html><head></head><body><h1>{} Not Found</h1></body></html>".format(p)
-	return c,r
