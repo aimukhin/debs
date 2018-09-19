@@ -41,21 +41,23 @@ from urllib.parse import parse_qs
 import sqlite3
 from datetime import date
 
+class UserError(Exception):
+	"""invalid user input"""
+
 def application(environ,start_response):
 	"""entry point"""
 	try:
 		p = environ['PATH_INFO']
 		qs = environ['QUERY_STRING']
-		h = [('Content-type','text/html')]
 		# Connect to the database
 		cnx = None
 		cnx = sqlite3.connect(db)
 		crs = cnx.cursor()
 		# Main selector
 		if p=="/":
-			c,r = main(crs)
+			c,r,h = main(crs)
 		elif p=="/acct":
-			c,r = acct(crs,qs)
+			c,r,h = acct(crs,qs)
 		elif p=="/ins_xact":
 			c,r,h = ins_xact(crs,environ)
 		elif p=="/del_xact":
@@ -66,12 +68,18 @@ def application(environ,start_response):
 			c,r,h = close_acct(crs,qs)
 		else:
 			raise ValueError("Wrong access")
+	except UserError as e:
+		c = '400 Bad Request'
+		r = "<html><head></head><body><h1>Error</h1><h2>{}</h2></body></html>".format(e)
+		h = [('Content-type','text/html')]
 	except ValueError as e:
 		c = '400 Bad Request'
-		r = "<html><head></head><body><h1>Bad request</h1><h2>{}</h2></body></html>".format(e)
+		r = "{}".format(e)
+		h = [('Content-type','text/plain')]
 	except sqlite3.Error as e:
 		c = '500 Internal Server Error'
-		r = "<html><head></head><body><h1>Database error</h1><h2>{}</h2></body></html>".format(e)
+		r = "Database error: {}".format(e)
+		h = [('Content-type','text/plain')]
 	finally:
 		if cnx:
 			cnx.commit()
@@ -200,14 +208,10 @@ def main(crs):
 	for atc in ('A','e'):
 		v -= totals[atc]
 	if v!=0:
-		c = '200 OK'
-		r = """
-		<html><head></head><body>
-		<h1>Accounting equation DOESN'T HOLD!</h1>
-		<h2>Database is corrupted and inconsistent!</h2>
-		</body></html>
-		"""
-		return c,r
+		c = '500 Internal Server Error'
+		r = "Inconsistent database: accounting equation doesn't hold"
+		h = [('Content-type','text/plain')]
+		return c,r,h
 	# New account
 	r += """
 	<hr>
@@ -251,7 +255,8 @@ def main(crs):
 	"""
 	# Return success
 	c = '200 OK'
-	return c,r
+	h = [('Content-type','text/html')]
+	return c,r,h
 
 def acct(crs,qs):
 	"""show account statement page"""
@@ -534,7 +539,8 @@ def acct(crs,qs):
 	"""
 	# Return success
 	c = '200 OK'
-	return c,r
+	h = [('Content-type','text/html')]
+	return c,r,h
 
 def ins_xact(crs,environ):
 	"""insert a new transaction"""
@@ -556,34 +562,34 @@ def ins_xact(crs,environ):
 	try:
 		dt = date(int(yyyy),int(mm),int(dd)).toordinal()
 	except ValueError:
-		raise ValueError("Bad date")
+		raise UserError("Bad date")
 	# Check transaction values
 	if dr=='':
 		dr = '0'
 	try:
 		dr = cur2int(arith(dr))
 	except ValueError:
-		raise ValueError("Bad Dr")
+		raise UserError("Bad Dr")
 	if cr=='':
 		cr = '0'
 	try:
 		cr = cur2int(arith(cr))
 	except ValueError:
-		raise ValueError("Bad Cr")
+		raise UserError("Bad Cr")
 	if dr<0 or cr<0:
-		raise ValueError("Dr and Cr cannot be negative")
+		raise UserError("Dr and Cr cannot be negative")
 	if dr!=0 and cr!=0:
-		raise ValueError("Dr and Cr cannot both be set")
+		raise UserError("Dr and Cr cannot both be set")
 	if dr==0 and cr==0:
 		if newbal=='':
-			raise ValueError("Set either Dr or Cr, or Balance")
+			raise UserError("Set either Dr or Cr, or Balance")
 		try:
 			newbal = cur2int(arith(newbal))
 		except ValueError:
-			raise ValueError("Bad Balance")
+			raise UserError("Bad Balance")
 	# Check accounts
 	if oaid=='':
-		raise ValueError("Please select the opposing account")
+		raise UserError("Please select the opposing account")
 	try:
 		aid = int(aid)
 	except ValueError:
@@ -592,28 +598,28 @@ def ins_xact(crs,environ):
 		oaid = int(oaid)
 	except ValueError:
 		raise ValueError("Bad oaid")
-	if aid==oaid:
-		raise ValueError("Transaction with the same account")
 	crs.execute("SELECT COUNT(aid) FROM accts WHERE aid=? AND cdt=0",[aid])
 	if res(crs)==0:
 		raise ValueError("Non-existent aid")
 	crs.execute("SELECT COUNT(aid) FROM accts WHERE aid=? AND cdt=0",[oaid])
 	if res(crs)==0:
 		raise ValueError("Non-existent oaid")
+	if aid==oaid:
+		raise UserError("Transaction with the same account")
 	if dt>date.today().toordinal():
-		raise ValueError("Date cannot be in the future")
+		raise UserError("Date cannot be in the future")
 	crs.execute("SELECT odt FROM accts WHERE aid=?",[aid])
 	if dt<res(crs):
-		raise ValueError("Date before the account's opening date")
+		raise UserError("Date before the account's opening date")
 	crs.execute("SELECT odt FROM accts WHERE aid=?",[oaid])
 	if dt<res(crs):
-		raise ValueError("Date before the opposing account's opening date")
+		raise UserError("Date before the opposing account's opening date")
 	crs.execute("SELECT COUNT(*) FROM xacts WHERE aid=? AND dt>?",[aid,dt])
 	if res(crs)!=0:
-		raise ValueError("Current account has newer transactions")
+		raise UserError("Current account has newer transactions")
 	crs.execute("SELECT COUNT(*) FROM xacts WHERE aid=? AND dt>?",[oaid,dt])
 	if res(crs)!=0:
-		raise ValueError("Opposing account has newer transactions")
+		raise UserError("Opposing account has newer transactions")
 	# Input data OK, prepare to insert transaction
 	# Get account types
 	crs.execute("SELECT type FROM accts WHERE aid=?",[aid])
@@ -702,14 +708,14 @@ def creat_acct(crs,qs):
 		raise ValueError("Wrong access")
 	# Check arguments
 	if atype=='':
-		raise ValueError("Please select the account type")
+		raise UserError("Please select the account type")
 	if not atype in [x for x,_ in atypes]:
 		raise ValueError("Wrong account type")
 	if name=='':
-		raise ValueError("Please set the account name")
+		raise UserError("Please set the account name")
 	crs.execute("SELECT COUNT(*) FROM accts WHERE name=?",[name])
 	if res(crs)!=0:
-		raise ValueError("Account with the same name already exists")
+		raise UserError("Account with the same name already exists")
 	# Create account
 	odt = date.today().toordinal()
 	crs.execute("INSERT INTO accts VALUES (NULL,?,?,?,0)",[atype,name,odt])
