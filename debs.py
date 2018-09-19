@@ -6,6 +6,37 @@ db = '/var/www/wsgi/debs/sql/debs.sql'
 thousand_sep = ' '
 decimal_sep = ','
 
+style = """
+table.full { width: 100%; border-spacing: 0 2px; }
+td.r { text-align: right; }
+tr.sep td { background-color: #f0f0f0; }
+tr.sep_tot td { background-color: #c0c0c0; }
+tr.sep_month td { background-color: #c0c0c0; }
+tr.sep_year td { background-color: #808080; }
+div.indent { margin-left: 5ch; }
+table.full { width: 100%; }
+tr.line { white-space: nowrap; }
+tr.newx { background-color: #f0f0f0; }
+tr.hl { background-color: #ffff80; }
+div.center { text-align: center; }
+table.center { margin: auto; }
+input.w2 { width: 2ch; }
+input.w4 { width: 4ch; }
+input.w12 { width: 12ch; }
+input.comm { width: 75%; }
+th.date,td.date { width: 15%; text-align: left; }
+th.dr,td.dr { width: 10%; text-align: right; }
+th.cr,td.cr { width: 10%; text-align: right; }
+th.bal,td.bal { width: 15%; text-align: right; }
+th.opp,td.opp { width: 25%; text-align: right; }
+th.comm,td.comm { text-align: center; }
+td.x { width: 2%; }
+a.x { color: red; font-weight: bold; text-decoration:none; }
+a.arr { text-decoration: none; }
+a.red { color: red; }
+span.atype { color: #c0c0c0; }
+"""
+
 from urllib.parse import parse_qs
 import sqlite3
 from datetime import date
@@ -45,6 +76,7 @@ def application(environ,start_response):
 		if cnx:
 			cnx.commit()
 			cnx.close()
+	h += [('Cache-Control','max-age=0')]
 	start_response(c,h)
 	return [r.encode()]
 
@@ -115,25 +147,29 @@ def new_balance(atype,bal,dr,cr):
 
 def main(crs):
 	"""show main page"""
-	# Caption
+	# Header
 	r = """
-	<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+	<!DOCTYPE html>
 	<html>
 	<head>
-	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-	<meta http-equiv="pragma" content="no-cache">
+	<meta charset="UTF-8">
 	<meta name="format-detection" content="telephone=no">
+	<style>
+	{}
+	</style>
 	<title>Double-entry Bookkeeping System</title>
 	</head>
+	""".format(style)
+	# Body
+	r += """
 	<body>
-	<dl>
 	"""
 	# Accounts
 	totals = {}
 	for atc,atn in atypes:
 		r += """
-		<dt><strong>{}</strong>
-		<dd>
+		<strong>{}</strong>
+		<div class=indent>
 		<table>
 		""".format(atn)
 		totals[atc] = 0
@@ -144,21 +180,19 @@ def main(crs):
 			r += """
 			<tr>
 			<td><a href='acct?aid={}'>{}</a></td>
-			<td align='right'>&nbsp; {}</td>
+			<td class=r>&nbsp; {}</td>
 			</tr>
 			""".format(aid,name,int2cur(bal))
 		r += """
-		<tr><td colspan=2 bgcolor='#c0c0c0'></td></tr>
+		<tr class=sep_tot><td colspan=2></td></tr>
 		<tr>
 		<td>Total</td>
-		<td align='right'>&nbsp; {}</td>
+		<td class=r>&nbsp; {}</td>
 		</tr>
 		<tr><td colspan=2>&nbsp;</td></tr>
 		</table>
+		</div>
 		""".format(int2cur(totals[atc]))
-	r += """
-	</dl>
-	"""
 	# Verify accounting equation
 	v = 0
 	for atc in ('E','L','i'):
@@ -180,7 +214,7 @@ def main(crs):
 	<form action="creat_acct" method="get">
 	New account &nbsp;
 	<select name='type'>
-	<option></option>
+	<option value=''>&nbsp;</option>
 	"""
 	for atc,atn in atypes:
 		r += """
@@ -196,21 +230,22 @@ def main(crs):
 	r += """
 	<hr>
 	<h3>Closed accounts</h3>
-	<dl>
 	"""
 	for atc,atn in atypes:
 		r += """
-		<dt>
 		<strong>{}</strong>
+		<div class=indent>
 		""".format(atn)
 		crs.execute("SELECT aid,name FROM accts WHERE type=? AND cdt<>0 ORDER BY name",[atc])
 		for aid,name in crs:
 			r += """
-			<dd><a href='acct?aid={}'>{}</a>
+			<a href='acct?aid={}'>{}</a><br>
 			""".format(aid,name)
+		r += """
+		</div>
+		"""
 	# Cellar
 	r += """
-	</dl>
 	</body>
 	</html>
 	"""
@@ -267,16 +302,19 @@ def acct(crs,qs):
 			edt = date.today().toordinal()
 		else:
 			edt = cdt
-	# Caption
+	# Header
 	r = """
-	<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+	<!DOCTYPE html>
 	<html>
 	<head>
-	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-	<meta http-equiv="pragma" content="no-cache">
+	<meta charset="UTF-8">
 	<meta name="format-detection" content="telephone=no">
-	<title>Double-entry Bookkeeping System</title>
-	<script type="text/javascript">
+	<style>
+	{}
+	</style>
+	""".format(style)
+	r += """
+	<script>
 	function confirmCloseAccount(what) {
 	return confirm("Are you sure to close account " + what + "?");
 	}
@@ -306,15 +344,13 @@ def acct(crs,qs):
 	td.setDate(d.value);
 	td.setDate(td.getDate() + delta);
 	y.value = td.getFullYear();
-//	m.value = ("0" + (td.getMonth()+1)).slice(-2);
-//	d.value = ("0" + td.getDate()).slice(-2);
 	m.value = td.getMonth()+1;
 	d.value = td.getDate();
 	hlCurDate();
 	}
 	</script>
+	<title>Double-entry Bookkeeping System</title>
 	</head>
-	<body>
 	"""
 	# Basic statement info: start and end balances, and turnovers
 	sb = eb = tdr = tcr = 0
@@ -331,44 +367,47 @@ def acct(crs,qs):
 				break
 	sdt_d = date.fromordinal(sdt)
 	edt_d = date.fromordinal(edt)
+	# Body
 	r += """
-	<center>
+	<body>
+	<div class=center>
 	<form action="acct" method=get>
 	<input type=hidden name=aid value="{}">
 	<h2>{}</h2>
 	<h3>Account statement</h3> for the period from
-	<input type=text name=syyyy size=4 maxlength=4 style="width:4ch" value="{}">
-	<input type=text name=smm size=2 maxlength=2 style="width:2ch" value="{}">
-	<input type=text name=sdd size=2 maxlength=2 style="width:2ch" value="{}">
+	<input type=text name=syyyy size=4 maxlength=4 class=w4 value="{}">
+	<input type=text name=smm size=2 maxlength=2 class=w2 value="{}">
+	<input type=text name=sdd size=2 maxlength=2 class=w2 value="{}">
 	to
-	<input type=text name=eyyyy size=4 maxlength=4 style="width:4ch" value="{}">
-	<input type=text name=emm size=2 maxlength=2 style="width:2ch" value="{}">
-	<input type=text name=edd size=2 maxlength=2 style="width:2ch" value="{}">
+	<input type=text name=eyyyy size=4 maxlength=4 class=w4 value="{}">
+	<input type=text name=emm size=2 maxlength=2 class=w2 value="{}">
+	<input type=text name=edd size=2 maxlength=2 class=w2 value="{}">
 	<input type=submit value=Update>
 	</form>
+	</div>
 	""".format(aid,name,sdt_d.year,sdt_d.month,sdt_d.day,edt_d.year,edt_d.month,edt_d.day)
 	r += """
-	<table>
+	<table class=center>
 	<tr><td colspan=3>&nbsp;</td></tr>
-	<tr> <td align=left>Starting balance</td> <td>&nbsp;</td> <td align=right>{}</td> </tr>
-	<tr> <td align=left>Debit turnovers</td> <td>&nbsp;</td> <td align=right>{}</td> </tr>
-	<tr> <td align=left>Credit turnovers</td> <td>&nbsp;</td> <td align=right>{}</td> </tr>
-	<tr> <td align=left>Ending balance</td> <td>&nbsp;</td> <td align=right>{}</td> </tr>
+	<tr><td>Starting balance</td><td>&nbsp;</td><td class=r>{}</td></tr>
+	<tr><td>Debit turnovers</td><td>&nbsp;</td><td class=r>{}</td></tr>
+	<tr><td>Credit turnovers</td><td>&nbsp;</td><td class=r>{}</td></tr>
+	<tr><td>Ending balance</td><td>&nbsp;</td><td class=r>{}</td></tr>
 	</table>
-	</center>
 	<a href=".">Back to list</a>
 	<hr>
 	""".format(int2cur(sb),int2cur(tdr),int2cur(tcr),int2cur(eb))
 	# Transactions
 	r += """
-	<table width="100%" cellspacing=0>
-	<tr bgcolor="#f0f0f0">
-	<th width="15%" align=left>Date</th>
-	<th width="10%" align=right>Dr</th>
-	<th width="10%" align=right>Cr</th>
-	<th width="15%" align=right>Balance</th>
-	<th width="25%" align=right>Opp acct</th>
-	<th width="25%">Comment</th>
+	<table class=full>
+	<tr class=line>
+	<th class=date>Date</th>
+	<th class=dr>Dr</th>
+	<th class=cr>Cr</th>
+	<th class=bal>Balance</th>
+	<th class=opp>Opposing account</th>
+	<th class=comm>Comment</th>
+	<th class=x></th>
 	</tr>
 	</table>
 	"""
@@ -377,22 +416,22 @@ def acct(crs,qs):
 		d = date.today()
 		r += """
 		<form action="ins_xact" method=post>
-		<table width="100%" cellspacing=0>
-		<tr bgcolor="#f0f0f0" style="white-space: nowrap;">
-		<td width="15%" align=left>
-		<a style="text-decoration:none" href='javascript:chgDate(-1)' title="day before">&larr;</a> 
-		<input type=text name=yyyy size=4 maxlength=4 style="width:4ch" value="{}" id=y onchange="hlCurDate()">
-		<input type=text name=mm size=2 maxlength=2 style="width:2ch" value="{}" id=m onchange="hlCurDate()">
-		<input type=text name=dd size=2 maxlength=2 style="width:2ch" value="{}" id=d onchange="hlCurDate()">
-		<a style="text-decoration:none" href="javascript:chgDate(+1)" title="day after">&rarr;</a>
+		<table class=full>
+		<tr class="line newx">
+		<td class=date>
+		<a class=arr href='javascript:chgDate(-1)' title="day before">&larr;</a> 
+		<input type=text name=yyyy size=4 maxlength=4 class=w4 value="{}" id=y onchange="hlCurDate()">
+		<input type=text name=mm size=2 maxlength=2 class=w2 value="{}" id=m onchange="hlCurDate()">
+		<input type=text name=dd size=2 maxlength=2 class=w2 value="{}" id=d onchange="hlCurDate()">
+		<a class=arr href="javascript:chgDate(+1)" title="day after">&rarr;</a>
 		</td>
-		<td width="10%" align=right><input type=text size=12 style="width:12ch" name=dr></td>
-		<td width="10%" align=right><input type=text size=12 style="width:12ch" name=cr></td>
-		<td width="15%" align=right><input type=text size=12 style="width:12ch" name=newbal></td>
-		<td width="25%" align=right>
+		<td class=dr><input type=text size=12 class=w12 name=dr></td>
+		<td class=cr><input type=text size=12 class=w12 name=cr></td>
+		<td class=bal><input type=text size=12 class=w12 name=newbal></td>
+		<td class=opp>
 		<input type=hidden name=aid value="{}">
 		<select name=oaid>
-		<option></option>
+		<option value=''>&nbsp;</option>
 		""".format(d.year,d.month,d.day,aid)
 		for atc,atn in atypes:
 			r += """
@@ -406,7 +445,7 @@ def acct(crs,qs):
 				""".format(oaid,oaname)
 			if len(opts)==0:
 				r += """
-				<option></option>
+				<option>&nbsp;</option>
 				"""
 			r += """
 			</optgroup>
@@ -414,8 +453,8 @@ def acct(crs,qs):
 		r += """
 		</select>
 		</td>
-		<td width="25%" align=center>
-		<input type=text name=comment size=20 style="width:75%" maxlength=255>
+		<td class=comm>
+		<input type=text name=comment size=20 class=comm maxlength=255>
 		<input type=submit value=Insert>
 		</td>
 		</tr>
@@ -424,16 +463,7 @@ def acct(crs,qs):
 		"""
 	# Past transactions
 	r += """
-	<table width="100%" style="border-spacing: 0 2px;">
-	<tr>
-	<td width="15%"></td>
-	<td width="10%"></td>
-	<td width="10%"></td>
-	<td width="15%"></td>
-	<td width="25%"></td>
-	<td width="23%"></td>
-	<td width="2%"></td>
-	</tr>
+	<table class=full>
 	"""
 	prev_year = None
 	prev_month = None
@@ -446,42 +476,36 @@ def acct(crs,qs):
 		x_year = dt_d.year
 		x_month = dt_d.month
 		if prev_year is None and prev_month is None:
-			sep_bgcolor = "#ffffff"
+			sep_class = ""
 		elif x_year!=prev_year:
-			sep_bgcolor = "#808080"
+			sep_class = "sep_year"
 		elif x_month!=prev_month:
-			sep_bgcolor = "#c0c0c0"
+			sep_class = "sep_month"
 		else:
-			sep_bgcolor = "#f0f0f0"
-		if xid==hlxid:
-			hl_bgcolor = 'bgcolor="#ffff80"'
-			anchor = "<a id=hl></a>"
-		else:
-			hl_bgcolor = ""
-			anchor = ""
+			sep_class = "sep"
+		hl_class = "hl" if xid==hlxid else ""
+		anchor = "<a id=hl></a>" if xid==hlxid else ""
 		prev_year = x_year
 		prev_month = x_month
 		crs.execute("SELECT type,name FROM accts WHERE aid=?",[oaid])
 		oatype,oaname = crs.fetchone()
 		r += """
-		<tr>
-		<td colspan=7 bgcolor="{}"></td>
-		</tr>
-		<tr style="white-space: nowrap;" {}>
-		<td>{}</td>
-		<td align=right>{}</td>
-		<td align=right>{}</td>
-		<td align=right>{}</td>
-		<td align=right><font color="#c0c0c0">{}</font>&nbsp;<a href="acct?aid={}&amp;hlxid={}#hl">{}</a></td>
-		<td align=left>&nbsp;<small>{}</small>{}</td>
-		<td>
-		""".format(sep_bgcolor,hl_bgcolor,dt_d,dr,cr,x_bal,oatype,oaid,xid,oaname,comment,anchor)
+		<tr class="{}"><td colspan=7></td></tr>
+		<tr class="line {}">
+		<td class=date>{}</td>
+		<td class=dr>{}</td>
+		<td class=cr>{}</td>
+		<td class=bal>{}</td>
+		<td class=opp><span class=atype>{}</span>&nbsp;<a href="acct?aid={}&amp;hlxid={}#hl">{}</a></td>
+		<td class=comm>&nbsp;<small>{}</small>{}</td>
+		<td class=x>
+		""".format(sep_class,hl_class,dt_d,dr,cr,x_bal,oatype,oaid,xid,oaname,comment,anchor)
 		# We can delete the transaction if it is the last one for both aid and oaid
 		if xid==maxxid:
 			crs.execute("SELECT MAX(xid) FROM xacts WHERE aid=?",[oaid])
 			if xid==res(crs):
 				r += """
-				<a style='color:red; font-weight: bold; text-decoration:none'
+				<a class=x
 				href='del_xact?xid={}&amp;aid={}'
 				onClick='return confirmDeleteTransaction()'
 				title='delete transaction'>
@@ -494,16 +518,14 @@ def acct(crs,qs):
 		"""
 	r += """
 	</table>
-	<hr>
 	"""
 	# Close the account
 	if bal==0 and cdt==0:
 		r += """
-		<center>
-		<a href='close_acct?aid={}' onClick='return confirmCloseAccount(\"{}\")'>
-		<font color=red>Close this account</font>
-		</a>
-		</center>
+		<hr>
+		<div class=center>
+		<a class=red href='close_acct?aid={}' onClick='return confirmCloseAccount(\"{}\")'>Close this account</a>
+		</div>
 		""".format(aid,name)
 	# Cellar
 	r += """
