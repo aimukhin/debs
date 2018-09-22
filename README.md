@@ -13,9 +13,8 @@ server as a WSGI application. It uses SQLite for data storage.
 Arrange your web server to run the program as a WSGI application. Put
 the database file wherever you like, only make sure the database file
 and its parent directory are writable by the user from whom the web
-server is running. In the Python source set the path to the database
-file. You might also wish to modify thousand and decimal separators to
-match your locale.
+server is running. Pass the database file location to the program in the
+`DB` environment variable.
 
 ## Screenshots
 ### The list of accounts:

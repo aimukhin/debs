@@ -4,7 +4,6 @@ Copyright (c) 2018 Alexander Mukhin
 MIT License
 """
 
-db = '/var/www/wsgi/debs/sql/debs.sql'
 thousand_sep = ' '
 decimal_sep = ','
 
@@ -59,7 +58,7 @@ def application(environ,start_response):
 		qs = environ['QUERY_STRING']
 		# Connect to the database
 		cnx = None
-		cnx = sqlite3.connect(db)
+		cnx = sqlite3.connect(environ['DB'])
 		crs = cnx.cursor()
 		# Main selector
 		if p=="/":
@@ -88,6 +87,10 @@ def application(environ,start_response):
 		c = '500 Internal Server Error'
 		r = "Database error: {}".format(e)
 		h = [('Content-type','text/plain')]
+	except KeyError as e:
+		c = "400 Bad Request"
+		r = "Parameter expected: {}".format(e)
+		h = [("Content-type","text/plain")]
 	finally:
 		if cnx:
 			cnx.commit()
