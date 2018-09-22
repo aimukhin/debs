@@ -1,5 +1,7 @@
 """
 Double-entry Bookkeeping System
+Copyright (c) 2018 Alexander Mukhin
+MIT License
 """
 
 db = '/var/www/wsgi/debs/sql/debs.sql'

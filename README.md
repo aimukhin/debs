@@ -24,4 +24,4 @@ match your locale.
 ![](docs/acct.jpg)
 
 ## License
-The program is in the public domain.
+MIT.
