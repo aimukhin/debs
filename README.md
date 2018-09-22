@@ -3,7 +3,7 @@ A simple web-based double-entry bookkeeping system.
 
 ## Features
 The system supports all basic account types, and works with arbitrary
-big numbers using precise integer arithmetic.
+big numbers using exact integer arithmetic.
 
 ## Requirements
 The program is written in Python 3 and intended to be run by a web
@@ -19,9 +19,9 @@ match your locale.
 
 ## Screenshots
 ### The list of accounts:
-![](docs/list.jpg)
+![](docs/list.png)
 ### An account page:
-![](docs/acct.jpg)
+![](docs/acct.png)
 
 ## License
 MIT.
