@@ -168,9 +168,8 @@ def main(crs,qs):
 	try:
 		creat_err = q['creat_err'][0] if 'creat_err' in q else None
 		if creat_err is not None:
-			err_atype = q['err_atype'][0]
-			# Name has been already escaped in ins_xact
-			err_name = q['err_name'][0]
+			err_atype = q['type'][0]
+			err_name = escape(q['name'][0])
 		else:
 			err_atype = err_name = ""
 	except:
@@ -306,15 +305,14 @@ def acct(crs,qs):
 		hlxid = int(q['hlxid'][0]) if 'hlxid' in q else None
 		ins_err = q['ins_err'][0] if 'ins_err' in q else None
 		if ins_err is not None:
-			err_yyyy = escape(q['err_yyyy'][0])
-			err_mm = escape(q['err_mm'][0])
-			err_dd = escape(q['err_dd'][0])
-			err_dr = escape(q['err_dr'][0])
-			err_cr = escape(q['err_cr'][0])
-			err_newbal = escape(q['err_newbal'][0])
-			err_oaid = int(q['err_oaid'][0])
-			# Comment has been already escaped in ins_xact
-			err_comment = q['err_comment'][0]
+			err_yyyy = escape(q['yyyy'][0])
+			err_mm = escape(q['mm'][0])
+			err_dd = escape(q['dd'][0])
+			err_dr = escape(q['dr'][0])
+			err_cr = escape(q['cr'][0])
+			err_newbal = escape(q['newbal'][0])
+			err_oaid = int(q['oaid'][0])
+			err_comment = escape(q['comment'][0])
 		else:
 			err_yyyy = err_mm = err_dd = ""
 			err_dr = err_cr = err_newbal = ""
@@ -607,7 +605,8 @@ def ins_xact(crs,environ):
 	"""insert a new transaction"""
 	# Get arguments
 	try:
-		q = parse_qs(environ['wsgi.input'].readline().decode(),keep_blank_values=True)
+		qs = environ['wsgi.input'].readline().decode()
+		q = parse_qs(qs,keep_blank_values=True)
 		yyyy = q['yyyy'][0]
 		mm = q['mm'][0]
 		dd = q['dd'][0]
@@ -619,7 +618,9 @@ def ins_xact(crs,environ):
 		comment = escape(q['comment'][0])
 	except KeyError:
 		raise ValueError("Wrong access")
-	# Check aid
+	# Prepare return URL for user errors (send back all parameters)
+	ret = "acct?"+qs+"&ins_err="
+	# Check accounts
 	try:
 		aid = int(aid)
 	except ValueError:
@@ -627,7 +628,6 @@ def ins_xact(crs,environ):
 	crs.execute("SELECT COUNT(aid) FROM accts WHERE aid=? AND cdt=0",[aid])
 	if res(crs)==0:
 		raise ValueError("Non-existent aid")
-	# Check oaid
 	try:
 		oaid = int(oaid)
 	except ValueError:
@@ -635,18 +635,6 @@ def ins_xact(crs,environ):
 	crs.execute("SELECT COUNT(aid) FROM accts WHERE aid=? AND cdt=0",[oaid])
 	if res(crs)==0 and oaid!=-1:
 		raise ValueError("Non-existent oaid")
-	# Prepare return URL for user errors
-	retq = [("aid",aid)]
-	retq += [("err_yyyy",yyyy)]
-	retq += [("err_mm",mm)]
-	retq += [("err_dd",dd)]
-	retq += [("err_dr",dr)]
-	retq += [("err_cr",cr)]
-	retq += [("err_newbal",newbal)]
-	retq += [("err_oaid",oaid)]
-	retq += [("err_comment",comment)]
-	ret = "acct?"+urlencode(retq)+"&ins_err="
-	# Check accounts
 	if oaid==-1:
 		raise UserError(ret,"Please select the opposing account")
 	if aid==oaid:
@@ -785,10 +773,8 @@ def creat_acct(crs,qs):
 		name = escape(q['name'][0])
 	except KeyError:
 		raise ValueError("Wrong access")
-	# Prepare return URL for user errors
-	retq = [("err_atype",atype)]
-	retq += [("err_name",name)]
-	ret = ".?"+urlencode(retq)+"&creat_err="
+	# Prepare return URL for user errors (send back all parameters)
+	ret = ".?"+qs+"&creat_err="
 	# Check arguments
 	if atype=='':
 		raise UserError(ret,"Please select the account type")
