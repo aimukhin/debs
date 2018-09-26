@@ -22,5 +22,15 @@ server is running. Pass the database file location to the program in the
 ### An account page:
 ![](docs/acct.png)
 
+## Usage
+The interface is quite straightforward, and it should be evident how to
+create accounts and enter transactions. Perhaps it's worth to say that
+all monetary input fields — Debit, Credit and Balance — accept arbitrary
+complex arithmetic expressions.
+
+## Customization
+You can easily change thousand and decimal separators, and CSS style.
+They are set just at the beginning of the Python code.
+
 ## License
 MIT.
