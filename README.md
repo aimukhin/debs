@@ -32,5 +32,8 @@ complex arithmetic expressions.
 You can easily change thousand and decimal separators, and CSS style.
 They are set just at the beginning of the Python code.
 
+## Compliance
+The program produces HTML5 markup with a CSS3 style sheet.
+
 ## License
 MIT.
