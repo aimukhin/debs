@@ -103,11 +103,13 @@ atypes = [('E','Equity'),('A','Assets'),('L','Liabilities'),('i','Income'),('e',
 
 def cur2int(s):
 	"""convert currency string to integer"""
-	s = s.replace(" ","")
+	s = s.replace(" ","") # drop spaces
+	s = s.replace(",",decimal_sep) # always accept "," as a decimal separator
+	s = s.replace(".",decimal_sep) # always accept "." as a decimal separator
 	r = ""
 	i = 0
 	for i,c in enumerate(s):
-		if c in ",.":
+		if c is decimal_sep:
 			break
 		r = r+c
 	return int(r+s[i+1:i+3].ljust(2,'0'))
