@@ -8,35 +8,36 @@ thousand_sep = ' '
 decimal_sep = ','
 
 style = """
-table.full { width: 100%; border-spacing: 0 2px; }
-td.r { text-align: right; }
-tr.sep td { background-color: #f0f0f0; }
-tr.sep_tot td { background-color: #c0c0c0; }
-tr.sep_month td { background-color: #c0c0c0; }
-tr.sep_year td { background-color: #808080; }
-div.indent { margin-left: 5ch; }
-div.form { background-color: #f0f0f0; }
-table.full { width: 100%; }
-tr.line { white-space: nowrap; }
-tr.hl { background-color: #ffff80; }
+a.arr { text-decoration: none; }
+a.red { color: red; }
+a.x { color: red; font-weight: bold; text-decoration:none; }
 div.center { text-align: center; }
-table.center { margin: auto; }
+div.form { background-color: #f0f0f0; }
+div.indent { margin-left: 5ch; }
+input.comm { width: 75%; }
 input.w2 { width: 2ch; }
 input.w4 { width: 4ch; }
 input.w12 { width: 12ch; }
-input.comm { width: 75%; }
+span.atype { color: #c0c0c0; }
+span.err { color: red; }
+table { border-spacing: 0; }
+table td { padding: 2px; }
+table.center { margin: auto; }
+table.full { width: 100%; }
+td.r { text-align: right; }
+td.x { width: 2%; }
 th.date,td.date { width: 15%; text-align: left; }
 th.dr,td.dr { width: 10%; text-align: right; }
 th.cr,td.cr { width: 10%; text-align: right; }
 th.bal,td.bal { width: 15%; text-align: right; }
 th.opp,td.opp { width: 25%; text-align: right; }
 th.comm,td.comm { text-align: center; }
-td.x { width: 2%; }
-a.x { color: red; font-weight: bold; text-decoration:none; }
-a.arr { text-decoration: none; }
-a.red { color: red; }
-span.atype { color: #c0c0c0; }
-span.err { color: red; }
+tr.hl { background-color: #ffff80; }
+tr.line { white-space: nowrap; }
+tr.sep td { border-top: 2px solid #f0f0f0; }
+tr.sep_month td { border-top: 2px solid #c0c0c0; }
+tr.sep_year td { border-top: 2px solid #808080; }
+tr.sep_tot td { border-top: 2px solid #c0c0c0; }
 """
 
 from urllib.parse import parse_qs,quote_plus,urlencode
@@ -216,8 +217,7 @@ def main(crs,qs):
 			</tr>
 			""".format(aid,name,int2cur(bal))
 		r += """
-		<tr class=sep_tot><td colspan=2></td></tr>
-		<tr>
+		<tr class=sep_tot>
 		<td>Total</td>
 		<td class=r>&nbsp; {}</td>
 		</tr>
@@ -559,8 +559,7 @@ def acct(crs,qs):
 		crs.execute("SELECT type,name FROM accts WHERE aid=?",[oaid])
 		oatype,oaname = crs.fetchone()
 		r += """
-		<tr class="{}"><td colspan=7></td></tr>
-		<tr class="line {}">
+		<tr class="line {} {}">
 		<td class=date>{}</td>
 		<td class=dr>{}</td>
 		<td class=cr>{}</td>
