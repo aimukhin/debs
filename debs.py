@@ -44,6 +44,7 @@ from urllib.parse import parse_qs,quote_plus,urlencode
 import sqlite3
 from datetime import date
 from html import escape
+from os.path import exists
 
 class UserError(Exception):
 	"""invalid user input"""
@@ -59,7 +60,10 @@ def application(environ,start_response):
 		qs = environ['QUERY_STRING']
 		# Connect to the database
 		cnx = None
-		cnx = sqlite3.connect(environ['DB'])
+		db = environ['DB']
+		if not exists(db):
+			raise sqlite3.Error("file does not exist")
+		cnx = sqlite3.connect(db)
 		crs = cnx.cursor()
 		# Main selector
 		if p=="/":
