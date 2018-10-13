@@ -56,30 +56,33 @@ class UserError(Exception):
 def application(environ,start_response):
 	"""entry point"""
 	try:
-		p = environ['PATH_INFO']
-		qs = environ['QUERY_STRING']
 		# Connect to the database
 		cnx = None
 		db = environ['DB']
 		if not exists(db):
 			raise sqlite3.Error("file does not exist")
 		cnx = sqlite3.connect(db)
-		crs = cnx.cursor()
+		cnx.isolation_level = None # we manage transactions explicitly
 		# Main selector
-		if p=="/":
-			c,r,h = main(crs,qs)
-		elif p=="/acct":
-			c,r,h = acct(crs,qs)
-		elif p=="/ins_xact":
-			c,r,h = ins_xact(crs,environ)
-		elif p=="/del_xact":
-			c,r,h = del_xact(crs,qs)
-		elif p=="/creat_acct":
-			c,r,h = creat_acct(crs,qs)
-		elif p=="/close_acct":
-			c,r,h = close_acct(crs,qs)
-		else:
-			raise ValueError("Wrong access")
+		crs = cnx.cursor()
+		p = environ['PATH_INFO']
+		qs = environ['QUERY_STRING']
+		crs.execute("BEGIN") # execute each request in a transaction
+		with cnx:
+			if p=="/":
+				c,r,h = main(crs,qs)
+			elif p=="/acct":
+				c,r,h = acct(crs,qs)
+			elif p=="/ins_xact":
+				c,r,h = ins_xact(crs,environ)
+			elif p=="/del_xact":
+				c,r,h = del_xact(crs,qs)
+			elif p=="/creat_acct":
+				c,r,h = creat_acct(crs,qs)
+			elif p=="/close_acct":
+				c,r,h = close_acct(crs,qs)
+			else:
+				raise ValueError("Wrong access")
 	except UserError as e:
 		c = "303 See Other"
 		r = ""
@@ -96,10 +99,8 @@ def application(environ,start_response):
 		c = "400 Bad Request"
 		r = "Parameter expected: {}".format(e)
 		h = [("Content-type","text/plain")]
-	finally:
-		if cnx:
-			cnx.commit()
-			cnx.close()
+	if cnx:
+		cnx.close()
 	h += [('Cache-Control','max-age=0')]
 	start_response(c,h)
 	return [r.encode()]
