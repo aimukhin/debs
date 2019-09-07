@@ -78,7 +78,7 @@ def application(environ,start_response):
 			elif p=="/del_xact":
 				c,r,h = del_xact(crs,qs)
 			elif p=="/creat_acct":
-				c,r,h = creat_acct(crs,qs)
+				c,r,h = creat_acct(crs,environ)
 			elif p=="/close_acct":
 				c,r,h = close_acct(crs,qs)
 			else:
@@ -245,7 +245,7 @@ def main(crs,qs):
 	r += """
 	<hr>
 	<div class=form>
-	<form action="creat_acct" method="get">
+	<form action="creat_acct" method=post>
 	New account &nbsp;
 	<select name='type'>
 	<option value=''>&nbsp;</option>
@@ -773,9 +773,10 @@ def del_xact(crs,qs):
 	h = [('Location',"acct?aid={}".format(aid))]
 	return c,r,h
 
-def creat_acct(crs,qs):
+def creat_acct(crs,environ):
 	"""create a new account"""
 	# Get arguments
+	qs = environ['wsgi.input'].readline().decode()
 	q = parse_qs(qs,keep_blank_values=True)
 	try:
 		atype = q['type'][0]
