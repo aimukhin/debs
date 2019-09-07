@@ -4,8 +4,8 @@ Copyright (c) 2018 Alexander Mukhin
 MIT License
 """
 
-thousand_sep=' '
-decimal_sep=','
+thousand_sep=" "
+decimal_sep=","
 
 style="""
 a.arr { text-decoration: none; }
@@ -55,15 +55,15 @@ def application(environ,start_response):
 	try:
 		# Connect to the database
 		cnx=None
-		db=environ['DB']
+		db=environ["DB"]
 		if not exists(db):
 			raise sqlite3.Error("file does not exist")
 		cnx=sqlite3.connect(db)
 		cnx.isolation_level=None # we manage transactions explicitly
 		# Main selector
 		crs=cnx.cursor()
-		p=environ['PATH_INFO']
-		qs=environ['QUERY_STRING']
+		p=environ["PATH_INFO"]
+		qs=environ["QUERY_STRING"]
 		crs.execute("BEGIN") # execute each request in a transaction
 		with cnx:
 			if p=="/":
@@ -81,24 +81,24 @@ def application(environ,start_response):
 			else:
 				raise ValueError("Wrong access")
 	except ValueError as e:
-		c='400 Bad Request'
+		c="400 Bad Request"
 		r="{}".format(e)
-		h=[('Content-type','text/plain')]
+		h=[("Content-type","text/plain")]
 	except sqlite3.Error as e:
-		c='500 Internal Server Error'
+		c="500 Internal Server Error"
 		r="Database error: {}".format(e)
-		h=[('Content-type','text/plain')]
+		h=[("Content-type","text/plain")]
 	except KeyError as e:
 		c="400 Bad Request"
 		r="Parameter expected: {}".format(e)
 		h=[("Content-type","text/plain")]
 	if cnx:
 		cnx.close()
-	h+=[('Cache-Control','max-age=0')]
+	h+=[("Cache-Control","max-age=0")]
 	start_response(c,h)
 	return [r.encode()]
 
-atypes=[('E','Equity'),('A','Assets'),('L','Liabilities'),('i','Income'),('e','Expenses')]
+atypes=[("E","Equity"),("A","Assets"),("L","Liabilities"),("i","Income"),("e","Expenses")]
 
 def cur2int(s):
 	"""convert currency string to integer"""
@@ -111,7 +111,7 @@ def cur2int(s):
 		if c is decimal_sep:
 			break
 		r=r+c
-	return int(r+s[i+1:i+3].ljust(2,'0'))
+	return int(r+s[i+1:i+3].ljust(2,"0"))
 
 def arith(s):
 	"""evaluate string as an arithmetic expression"""
@@ -132,7 +132,7 @@ def int2cur(v):
 	"""convert integer to currency string"""
 	s=str(abs(v))
 	r=""
-	for i,c in enumerate(s[::-1].ljust(3,'0'),1):
+	for i,c in enumerate(s[::-1].ljust(3,"0"),1):
 		if i==3:
 			r=decimal_sep+r
 		elif i%3==0:
@@ -158,9 +158,9 @@ def balance(crs,aid):
 
 def new_balance(atype,bal,dr,cr):
 	"""computes the new balance after transaction"""
-	if atype in ('E','L','i'):
+	if atype in ("E","L","i"):
 		return bal+cr-dr
-	elif atype in ('A','e'):
+	elif atype in ("A","e"):
 		return bal+dr-cr
 	else:
 		raise ValueError("Bad account type")
@@ -206,7 +206,7 @@ def main(crs,err=None):
 			totals[atc]+=bal
 			r+="""
 			<tr>
-			<td><a href='acct?aid={}'>{}</a></td>
+			<td><a href="acct?aid={}">{}</a></td>
 			<td class=r>&nbsp; {}</td>
 			</tr>
 			""".format(aid,name,int2cur(bal))
@@ -221,14 +221,14 @@ def main(crs,err=None):
 		""".format(int2cur(totals[atc]))
 	# Verify accounting equation
 	d=0
-	for atc in ('E','L','i'):
+	for atc in ("E","L","i"):
 		d+=totals[atc]
-	for atc in ('A','e'):
+	for atc in ("A","e"):
 		d-=totals[atc]
 	if d!=0:
-		c='500 Internal Server Error'
+		c="500 Internal Server Error"
 		r="Inconsistent database: accounting equation doesn't hold"
-		h=[('Content-type','text/plain')]
+		h=[("Content-type","text/plain")]
 		return c,r,h
 	# New account
 	r+="""
@@ -236,13 +236,13 @@ def main(crs,err=None):
 	<div class=form>
 	<form action="creat_acct" method=post>
 	New account &nbsp;
-	<select name='atype'>
-	<option value=''>&nbsp;</option>
+	<select name="atype">
+	<option value="">&nbsp;</option>
 	"""
 	for atc,atn in atypes:
 		sel="selected" if atc==v(err,"atype") else ""
 		r+="""
-		<option value='{}' {}>{}</option>
+		<option value="{}" {}>{}</option>
 		""".format(atc,sel,atn)
 	r+="""
 	</select>
@@ -272,7 +272,7 @@ def main(crs,err=None):
 		crs.execute("SELECT aid,name FROM accts WHERE type=? AND cdt<>0 ORDER BY name",[atc])
 		for aid,name in crs:
 			r+="""
-			<a href='acct?aid={}'>{}</a><br>
+			<a href="acct?aid={}">{}</a><br>
 			""".format(aid,name)
 		r+="""
 		</div>
@@ -283,8 +283,8 @@ def main(crs,err=None):
 	</html>
 	"""
 	# Return success
-	c='200 OK'
-	h=[('Content-type','text/html')]
+	c="200 OK"
+	h=[("Content-type","text/html")]
 	return c,r,h
 
 def acct(crs,qs,err=None):
@@ -293,14 +293,14 @@ def acct(crs,qs,err=None):
 	q=parse_qs(qs,keep_blank_values=True)
 	# Check the mandatory argument
 	try:
-		aid=q['aid'][0]
+		aid=q["aid"][0]
 	except KeyError:
 		raise ValueError("Wrong access")
 	crs.execute("SELECT COUNT(*) FROM accts WHERE aid=?",[aid])
 	if res(crs)==0:
 		raise ValueError("Bad aid")
 	# Get optional argument
-	hlxid=int(q['hlxid'][0]) if 'hlxid' in q else None
+	hlxid=int(q["hlxid"][0]) if "hlxid" in q else None
 	# Get commonly used account properties
 	crs.execute("SELECT name,odt,cdt FROM accts WHERE aid=?",[aid])
 	name,odt,cdt=crs.fetchone()
@@ -316,13 +316,13 @@ def acct(crs,qs,err=None):
 	# Find the statement period
 	try:
 		# Try to get the statement period from the arguments
-		sy=int(q['syyyy'][0])
-		sm=int(q['smm'][0])
-		sd=int(q['sdd'][0])
+		sy=int(q["syyyy"][0])
+		sm=int(q["smm"][0])
+		sd=int(q["sdd"][0])
 		sdt=date(sy,sm,sd).toordinal()
-		ey=int(q['eyyyy'][0])
-		em=int(q['emm'][0])
-		ed=int(q['edd'][0])
+		ey=int(q["eyyyy"][0])
+		em=int(q["emm"][0])
+		ed=int(q["edd"][0])
 		edt=date(ey,em,ed).toordinal()
 		if sdt>edt:
 			raise Exception
@@ -454,7 +454,7 @@ def acct(crs,qs,err=None):
 		<table class=full>
 		<tr class=line>
 		<td class=date>
-		<a class=arr href='javascript:chgDate(-1)' title="day before">&larr;</a> 
+		<a class=arr href="javascript:chgDate(-1)" title="day before">&larr;</a> 
 		<input type=text name=yyyy size=4 maxlength=4 class=w4 value="{}" id=y onchange="hlCurDate()">
 		<input type=text name=mm size=2 maxlength=2 class=w2 value="{}" id=m onchange="hlCurDate()">
 		<input type=text name=dd size=2 maxlength=2 class=w2 value="{}" id=d onchange="hlCurDate()">
@@ -466,18 +466,18 @@ def acct(crs,qs,err=None):
 		<td class=opp>
 		<input type=hidden name=aid value="{}">
 		<select name=oaid>
-		<option value='-1'>&nbsp;</option>
+		<option value="-1">&nbsp;</option>
 		""".format(yyyy,mm,dd,v(err,"dr"),v(err,"cr"),v(err,"newbal"),aid)
 		for atc,atn in atypes:
 			r+="""
-			<optgroup label='{}'>
+			<optgroup label="{}">
 			""".format(atn)
 			crs.execute("SELECT aid,name FROM accts WHERE type=? AND cdt=0 ORDER BY name",[atc])
 			opts=crs.fetchall()
 			for oaid,oaname in opts:
 				sel="selected" if oaid==v(err,"oaid") else ""
 				r+="""
-				<option value='{}' {}>{}</option>
+				<option value="{}" {}>{}</option>
 				""".format(oaid,sel,oaname)
 			if len(opts)==0:
 				r+="""
@@ -515,8 +515,8 @@ def acct(crs,qs,err=None):
 	crs.execute("SELECT * FROM xacts WHERE aid=? AND ?<=dt AND dt<=? ORDER BY xid DESC",[aid,sdt,edt])
 	for (xid,dt,aid,oaid,dr,cr,x_bal,comment) in crs.fetchall():
 		dt_d=date.fromordinal(dt)
-		dr=int2cur(int(dr)) if dr!='0' else ""
-		cr=int2cur(int(cr)) if cr!='0' else ""
+		dr=int2cur(int(dr)) if dr!="0" else ""
+		cr=int2cur(int(cr)) if cr!="0" else ""
 		x_bal=int2cur(int(x_bal))
 		x_year=dt_d.year
 		x_month=dt_d.month
@@ -550,9 +550,9 @@ def acct(crs,qs,err=None):
 			if xid==res(crs):
 				r+="""
 				<a class=x
-				href='del_xact?xid={}&amp;aid={}'
-				onClick='return confirmDeleteTransaction()'
-				title='delete transaction'>
+				href="del_xact?xid={}&amp;aid={}"
+				onClick="return confirmDeleteTransaction()"
+				title="delete transaction">
 				&times;
 				</a>
 				""".format(xid,aid)
@@ -568,7 +568,7 @@ def acct(crs,qs,err=None):
 		r+="""
 		<hr>
 		<div class=center>
-		<a class=red href='close_acct?aid={}' onClick='return confirmCloseAccount(\"{}\")'>Close this account</a>
+		<a class=red href="close_acct?aid={}" onClick="return confirmCloseAccount(\'{}\')">Close this account</a>
 		</div>
 		""".format(aid,name)
 	# Cellar
@@ -577,25 +577,25 @@ def acct(crs,qs,err=None):
 	</html>
 	"""
 	# Return success
-	c='200 OK'
-	h=[('Content-type','text/html')]
+	c="200 OK"
+	h=[("Content-type","text/html")]
 	return c,r,h
 
 def ins_xact(crs,environ):
 	"""insert a new transaction"""
 	# Get arguments
 	try:
-		qs=environ['wsgi.input'].readline().decode()
+		qs=environ["wsgi.input"].readline().decode()
 		q=parse_qs(qs,keep_blank_values=True)
-		yyyy=q['yyyy'][0]
-		mm=q['mm'][0]
-		dd=q['dd'][0]
-		dr=q['dr'][0]
-		cr=q['cr'][0]
-		newbal=q['newbal'][0]
-		aid=q['aid'][0]
-		oaid=q['oaid'][0]
-		comment=escape(q['comment'][0])
+		yyyy=q["yyyy"][0]
+		mm=q["mm"][0]
+		dd=q["dd"][0]
+		dr=q["dr"][0]
+		cr=q["cr"][0]
+		newbal=q["newbal"][0]
+		aid=q["aid"][0]
+		oaid=q["oaid"][0]
+		comment=escape(q["comment"][0])
 	except KeyError:
 		raise ValueError("Wrong access")
 	# Check accounts
@@ -625,14 +625,14 @@ def ins_xact(crs,environ):
 		except ValueError:
 			raise BadInput("Bad date")
 		# Check transaction values
-		if dr=='':
-			dr='0'
+		if dr=="":
+			dr="0"
 		try:
 			dr=cur2int(arith(dr))
 		except ValueError:
 			raise BadInput("Bad Dr")
-		if cr=='':
-			cr='0'
+		if cr=="":
+			cr="0"
 		try:
 			cr=cur2int(arith(cr))
 		except ValueError:
@@ -643,10 +643,10 @@ def ins_xact(crs,environ):
 			raise BadInput("Cr cannot be negative")
 		if dr!=0 and cr!=0:
 			raise BadInput("Dr and Cr cannot both be set")
-		if (dr!=0 or cr!=0) and newbal!='':
+		if (dr!=0 or cr!=0) and newbal!="":
 			raise BadInput("Dr or Cr and Balance cannot all be set")
 		if dr==0 and cr==0:
-			if newbal=='':
+			if newbal=="":
 				raise BadInput("Set one of Dr, Cr, or Balance")
 			try:
 				newbal=cur2int(arith(newbal))
@@ -671,15 +671,15 @@ def ins_xact(crs,environ):
 		# Fill error data
 		err=dict()
 		err["msg"]=str(e)
-		err["yyyy"]=q['yyyy'][0]
-		err["mm"]=q['mm'][0]
-		err["dd"]=q['dd'][0]
-		err["dr"]=q['dr'][0]
-		err["cr"]=q['cr'][0]
-		err["newbal"]=q['newbal'][0]
-		err["aid"]=q['aid'][0]
-		err["oaid"]=int(q['oaid'][0])
-		err["comment"]=escape(q['comment'][0])
+		err["yyyy"]=q["yyyy"][0]
+		err["mm"]=q["mm"][0]
+		err["dd"]=q["dd"][0]
+		err["dr"]=q["dr"][0]
+		err["cr"]=q["cr"][0]
+		err["newbal"]=q["newbal"][0]
+		err["aid"]=q["aid"][0]
+		err["oaid"]=int(q["oaid"][0])
+		err["comment"]=escape(q["comment"][0])
 		# Return
 		return acct(crs,"aid={}".format(aid),err)
 	# Input data OK, prepare to insert transaction
@@ -693,12 +693,12 @@ def ins_xact(crs,environ):
 	obal=balance(crs,oaid)
 	if dr==0 and cr==0:
 		# Derive dr and cr from new and old balances
-		if atype in ('E','L','i'):
+		if atype in ("E","L","i"):
 			if newbal>bal:
 				cr=newbal-bal
 			else:
 				dr=bal-newbal
-		elif atype in ('A','e'):
+		elif atype in ("A","e"):
 			if newbal>bal:
 				dr=newbal-bal
 			else:
@@ -726,8 +726,8 @@ def del_xact(crs,qs):
 	# Get arguments
 	q=parse_qs(qs)
 	try:
-		xid=q['xid'][0]
-		aid=q['aid'][0]
+		xid=q["xid"][0]
+		aid=q["aid"][0]
 	except KeyError:
 		raise ValueError("Wrong access")
 	# Check accounts
@@ -756,21 +756,21 @@ def del_xact(crs,qs):
 def creat_acct(crs,environ):
 	"""create a new account"""
 	# Get arguments
-	qs=environ['wsgi.input'].readline().decode()
+	qs=environ["wsgi.input"].readline().decode()
 	q=parse_qs(qs,keep_blank_values=True)
 	try:
-		atype=q['atype'][0]
-		aname=escape(q['aname'][0])
+		atype=q["atype"][0]
+		aname=escape(q["aname"][0])
 	except KeyError:
 		raise ValueError("Wrong access")
 	# Check argument
-	if not atype in [x for x,_ in atypes]+['']:
+	if not atype in [x for x,_ in atypes]+[""]:
 		raise ValueError("Wrong account type")
 	# Validate user input
 	try:
-		if atype=='':
+		if atype=="":
 			raise BadInput("Please select the account type")
-		if aname=='':
+		if aname=="":
 			raise BadInput("Please set the account name")
 		crs.execute("SELECT COUNT(*) FROM accts WHERE name=?",[aname])
 		if res(crs)!=0:
@@ -797,7 +797,7 @@ def close_acct(crs,qs):
 	# Get argument
 	q=parse_qs(qs)
 	try:
-		aid=q['aid'][0]
+		aid=q["aid"][0]
 	except KeyError:
 		raise ValueError("Wrong access")
 	# Check argument
