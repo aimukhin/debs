@@ -9,8 +9,6 @@ decimal_sep=","
 
 style="""
 a.arr { text-decoration: none; }
-a.red { color: red; }
-a.x { color: red; font-weight: bold; text-decoration:none; }
 div.center { text-align: center; }
 div.form { background-color: #f0f0f0; }
 div.indent { margin-left: 5ch; }
@@ -73,7 +71,7 @@ def application(environ,start_response):
 			elif p=="/ins_xact":
 				c,r,h=ins_xact(crs,environ)
 			elif p=="/del_xact":
-				c,r,h=del_xact(crs,qs)
+				c,r,h=del_xact(crs,environ)
 			elif p=="/creat_acct":
 				c,r,h=creat_acct(crs,environ)
 			elif p=="/close_acct":
@@ -549,12 +547,13 @@ def acct(crs,qs,err=None):
 			crs.execute("SELECT MAX(xid) FROM xacts WHERE aid=?",[oaid])
 			if xid==res(crs):
 				r+="""
-				<a class=x
-				href="del_xact?xid={}&amp;aid={}"
-				onClick="return confirmDeleteTransaction()"
-				title="delete transaction">
-				&times;
-				</a>
+				<div class=form>
+				<form action=del_xact method=post>
+				<input type=hidden name=xid value="{}">
+				<input type=hidden name=aid value="{}">
+				<input type=submit value=X onClick="return confirmDeleteTransaction()">
+				</form>
+				</div>
 				""".format(xid,aid)
 		r+="""
 		</td>
@@ -724,9 +723,10 @@ def ins_xact(crs,environ):
 	# Return
 	return acct(crs,"aid={}".format(aid))
 
-def del_xact(crs,qs):
+def del_xact(crs,environ):
 	"""delete transaction"""
 	# Get arguments
+	qs=environ["wsgi.input"].readline().decode()
 	q=parse_qs(qs)
 	try:
 		xid=q["xid"][0]
