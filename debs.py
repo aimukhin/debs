@@ -750,11 +750,8 @@ def del_xact(crs,qs):
 		raise ValueError("Opposing account has newer transactions")
 	# Delete transaction
 	crs.execute("DELETE FROM xacts WHERE xid=?",[xid])
-	# Return redirect
-	c = '303 See Other'
-	r = ""
-	h = [('Location',"acct?aid={}".format(aid))]
-	return c,r,h
+	# Return
+	return acct(crs,"aid={}".format(aid))
 
 def creat_acct(crs,environ):
 	"""create a new account"""
@@ -815,8 +812,5 @@ def close_acct(crs,qs):
 	# Close account
 	now = date.today().toordinal()
 	crs.execute("UPDATE accts SET cdt=? WHERE aid=?",[now,aid])
-	# Return redirect
-	c = '303 See Other'
-	r = ""
-	h = [('Location',"acct?aid={}".format(aid))]
-	return c,r,h
+	# Return
+	return acct(crs,"aid={}".format(aid))
