@@ -234,9 +234,9 @@ def main(crs,err=None):
 	r+="""
 	<hr>
 	<div class=form>
-	<form action="creat_acct" method=post>
+	<form action=creat_acct method=post>
 	New account &nbsp;
-	<select name="atype">
+	<select name=atype>
 	<option value="">&nbsp;</option>
 	"""
 	for atc,atn in atypes:
@@ -246,8 +246,8 @@ def main(crs,err=None):
 		""".format(atc,sel,atn)
 	r+="""
 	</select>
-	<input type="text" name="aname" value="{}">
-	<input type="submit" value="Create">
+	<input type=text name=aname value="{}">
+	<input type=submit value=Create>
 	</form>
 	""".format(v(err,"aname"))
 	# Show error message
@@ -402,7 +402,7 @@ def acct(crs,qs,err=None):
 	r+="""
 	<body>
 	<div class=center>
-	<form action="acct" method=get>
+	<form action=acct method=get>
 	<input type=hidden name=aid value="{}">
 	<h2>{}</h2>
 	<h3>Account statement</h3> for the period from
@@ -450,7 +450,7 @@ def acct(crs,qs,err=None):
 		dd=d.day if err is None else err["dd"]
 		r+="""
 		<div class=form>
-		<form action="ins_xact" method=post>
+		<form action=ins_xact method=post>
 		<table class=full>
 		<tr class=line>
 		<td class=date>
