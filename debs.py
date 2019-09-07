@@ -786,9 +786,8 @@ def creat_acct(crs,environ):
 	# Check argument
 	if not atype in [x for x,_ in atypes]+['']:
 		raise ValueError("Wrong account type")
+	# Validate user input
 	try:
-		# Validate user input
-		err = None
 		if atype=='':
 			raise BadInput("Please select the account type")
 		if aname=='':
@@ -796,20 +795,22 @@ def creat_acct(crs,environ):
 		crs.execute("SELECT COUNT(*) FROM accts WHERE name=?",[aname])
 		if res(crs)!=0:
 			raise BadInput("Account with the same name already exists")
-		# Create account
-		odt = date.today().toordinal()
-		crs.execute("INSERT INTO accts VALUES (NULL,?,?,?,0)",[atype,aname,odt])
 	except BadInput as e:
 		# Fill error data
-		err=dict()
+		err = dict()
 		err["msg"] = str(e)
 		err["atype"] = atype
 		err["aname"] = aname
+		# Return
+		return main(crs,err)
 	except:
 		# Re-raise other exceptions
 		raise
+	# Create account
+	odt = date.today().toordinal()
+	crs.execute("INSERT INTO accts VALUES (NULL,?,?,?,0)",[atype,aname,odt])
 	# Return
-	return main(crs,err)
+	return main(crs)
 
 def close_acct(crs,qs):
 	"""close account"""
