@@ -53,6 +53,10 @@ class UserError(Exception):
 	def __str__(self):
 		return self.e
 
+class BadInput(Exception):
+	"""invalid user input"""
+	pass
+
 def application(environ,start_response):
 	"""entry point"""
 	try:
@@ -70,7 +74,7 @@ def application(environ,start_response):
 		crs.execute("BEGIN") # execute each request in a transaction
 		with cnx:
 			if p=="/":
-				c,r,h = main(crs,qs)
+				c,r,h = main(crs)
 			elif p=="/acct":
 				c,r,h = acct(crs,qs)
 			elif p=="/ins_xact":
@@ -172,19 +176,15 @@ def new_balance(atype,bal,dr,cr):
 	else:
 		raise ValueError("Bad account type")
 
-def main(crs,qs):
-	"""show main page"""
-	# Get optional arguments
-	q = parse_qs(qs,keep_blank_values=True)
+def v(kv,k):
+	"""returns the value of key or empty string"""
 	try:
-		creat_err = q['creat_err'][0] if 'creat_err' in q else None
-		if creat_err is not None:
-			err_atype = q['type'][0]
-			err_name = escape(q['name'][0])
-		else:
-			err_atype = err_name = ""
+		return kv[k]
 	except:
-		raise ValueError("Wrong access")
+		return ""
+
+def main(crs,err=None):
+	"""show main page"""
 	# Header
 	r = """
 	<!DOCTYPE html>
@@ -231,12 +231,12 @@ def main(crs,qs):
 		</div>
 		""".format(int2cur(totals[atc]))
 	# Verify accounting equation
-	v = 0
+	d = 0
 	for atc in ('E','L','i'):
-		v += totals[atc]
+		d += totals[atc]
 	for atc in ('A','e'):
-		v -= totals[atc]
-	if v!=0:
+		d -= totals[atc]
+	if d!=0:
 		c = '500 Internal Server Error'
 		r = "Inconsistent database: accounting equation doesn't hold"
 		h = [('Content-type','text/plain')]
@@ -251,7 +251,7 @@ def main(crs,qs):
 	<option value=''>&nbsp;</option>
 	"""
 	for atc,atn in atypes:
-		sel = "selected" if atc==err_atype else ""
+		sel = "selected" if atc==v(err,"atype") else ""
 		r += """
 		<option value='{}' {}>{}</option>
 		""".format(atc,sel,atn)
@@ -260,12 +260,12 @@ def main(crs,qs):
 	<input type="text" name="name" value="{}">
 	<input type="submit" value="Create">
 	</form>
-	""".format(err_name)
+	""".format(v(err,"name"))
 	# Show error message
-	if creat_err is not None:
+	if err is not None:
 		r += """
 		<span class=err>{}</span>
-		""".format(creat_err)
+		""".format(err["msg"])
 	# Close form area
 	r += """
 	</div>
@@ -783,26 +783,33 @@ def creat_acct(crs,environ):
 		name = escape(q['name'][0])
 	except KeyError:
 		raise ValueError("Wrong access")
-	# Prepare return URL for user errors (send back all parameters)
-	ret = ".?"+qs+"&creat_err="
-	# Check arguments
-	if atype=='':
-		raise UserError(ret,"Please select the account type")
-	if not atype in [x for x,_ in atypes]:
+	# Check argument
+	if not atype in [x for x,_ in atypes]+['']:
 		raise ValueError("Wrong account type")
-	if name=='':
-		raise UserError(ret,"Please set the account name")
-	crs.execute("SELECT COUNT(*) FROM accts WHERE name=?",[name])
-	if res(crs)!=0:
-		raise UserError(ret,"Account with the same name already exists")
-	# Create account
-	odt = date.today().toordinal()
-	crs.execute("INSERT INTO accts VALUES (NULL,?,?,?,0)",[atype,name,odt])
-	# Return redirect
-	c = '303 See Other'
-	r = ""
-	h = [('Location',".")]
-	return c,r,h
+	try:
+		# Validate user input
+		err = None
+		if atype=='':
+			raise BadInput("Please select the account type")
+		if name=='':
+			raise BadInput("Please set the account name")
+		crs.execute("SELECT COUNT(*) FROM accts WHERE name=?",[name])
+		if res(crs)!=0:
+			raise BadInput("Account with the same name already exists")
+		# Create account
+		odt = date.today().toordinal()
+		crs.execute("INSERT INTO accts VALUES (NULL,?,?,?,0)",[atype,name,odt])
+	except BadInput as e:
+		# Fill error data
+		err=dict()
+		err["msg"] = str(e)
+		err["atype"] = atype
+		err["name"] = name
+	except:
+		# Re-raise other exceptions
+		raise
+	# Return
+	return main(crs,err)
 
 def close_acct(crs,qs):
 	"""close account"""
