@@ -247,7 +247,7 @@ def main(crs,err=None):
 	<div class=form>
 	<form action="creat_acct" method=post>
 	New account &nbsp;
-	<select name='type'>
+	<select name='atype'>
 	<option value=''>&nbsp;</option>
 	"""
 	for atc,atn in atypes:
@@ -257,10 +257,10 @@ def main(crs,err=None):
 		""".format(atc,sel,atn)
 	r += """
 	</select>
-	<input type="text" name="name" value="{}">
+	<input type="text" name="aname" value="{}">
 	<input type="submit" value="Create">
 	</form>
-	""".format(v(err,"name"))
+	""".format(v(err,"aname"))
 	# Show error message
 	if err is not None:
 		r += """
@@ -779,8 +779,8 @@ def creat_acct(crs,environ):
 	qs = environ['wsgi.input'].readline().decode()
 	q = parse_qs(qs,keep_blank_values=True)
 	try:
-		atype = q['type'][0]
-		name = escape(q['name'][0])
+		atype = q['atype'][0]
+		aname = escape(q['aname'][0])
 	except KeyError:
 		raise ValueError("Wrong access")
 	# Check argument
@@ -791,20 +791,20 @@ def creat_acct(crs,environ):
 		err = None
 		if atype=='':
 			raise BadInput("Please select the account type")
-		if name=='':
+		if aname=='':
 			raise BadInput("Please set the account name")
-		crs.execute("SELECT COUNT(*) FROM accts WHERE name=?",[name])
+		crs.execute("SELECT COUNT(*) FROM accts WHERE name=?",[aname])
 		if res(crs)!=0:
 			raise BadInput("Account with the same name already exists")
 		# Create account
 		odt = date.today().toordinal()
-		crs.execute("INSERT INTO accts VALUES (NULL,?,?,?,0)",[atype,name,odt])
+		crs.execute("INSERT INTO accts VALUES (NULL,?,?,?,0)",[atype,aname,odt])
 	except BadInput as e:
 		# Fill error data
 		err=dict()
 		err["msg"] = str(e)
 		err["atype"] = atype
-		err["name"] = name
+		err["aname"] = aname
 	except:
 		# Re-raise other exceptions
 		raise
