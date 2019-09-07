@@ -303,7 +303,7 @@ def acct(crs,qs,err=None):
 	hlxid=int(q["hlxid"][0]) if "hlxid" in q else None
 	# Get commonly used account properties
 	crs.execute("SELECT name,odt,cdt FROM accts WHERE aid=?",[aid])
-	name,odt,cdt=crs.fetchone()
+	aname,odt,cdt=crs.fetchone()
 	bal=balance(crs,aid)
 	crs.execute("SELECT MAX(dt) FROM xacts WHERE aid=?",[aid])
 	maxdt=res(crs)
@@ -416,7 +416,7 @@ def acct(crs,qs,err=None):
 	<input type=submit value=Update>
 	</form>
 	</div>
-	""".format(aid,name,sdt_d.year,sdt_d.month,sdt_d.day,edt_d.year,edt_d.month,edt_d.day)
+	""".format(aid,aname,sdt_d.year,sdt_d.month,sdt_d.day,edt_d.year,edt_d.month,edt_d.day)
 	r+="""
 	<table class=center>
 	<tr><td colspan=3>&nbsp;</td></tr>
@@ -573,7 +573,7 @@ def acct(crs,qs,err=None):
 		<input type=submit value="Close account" onClick="return confirmCloseAccount(\'{}\')">
 		</form>
 		</div>
-		""".format(aid,name)
+		""".format(aid,aname)
 	# Cellar
 	r+="""
 	</body>
