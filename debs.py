@@ -46,13 +46,6 @@ from datetime import date
 from html import escape
 from os.path import exists
 
-class UserError(Exception):
-	"""invalid user input"""
-	def __init__(self,ret,err):
-		self.e = ret+quote_plus(err)
-	def __str__(self):
-		return self.e
-
 class BadInput(Exception):
 	"""invalid user input"""
 	pass
@@ -87,10 +80,6 @@ def application(environ,start_response):
 				c,r,h = close_acct(crs,qs)
 			else:
 				raise ValueError("Wrong access")
-	except UserError as e:
-		c = "303 See Other"
-		r = ""
-		h = [("Location", "{}".format(e))]
 	except ValueError as e:
 		c = '400 Bad Request'
 		r = "{}".format(e)
