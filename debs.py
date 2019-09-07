@@ -12,6 +12,7 @@ a.arr { text-decoration: none; }
 div.center { text-align: center; }
 div.form { background-color: #f0f0f0; }
 div.indent { margin-left: 5ch; }
+form.inline { display: inline; }
 input.comm { width: 75%; }
 input.w2 { width: 2ch; }
 input.w4 { width: 4ch; }
@@ -436,7 +437,6 @@ def acct(crs,qs,err=None):
 	<th class=bal>Balance</th>
 	<th class=opp>Opposing account</th>
 	<th class=comm>Comment</th>
-	<th class=x></th>
 	</tr>
 	</table>
 	"""
@@ -539,21 +539,18 @@ def acct(crs,qs,err=None):
 		<td class=cr>{}</td>
 		<td class=bal>{}</td>
 		<td class=opp><span class=atype>{}</span>&nbsp;<a href="acct?aid={}&amp;hlxid={}#hl">{}</a></td>
-		<td class=comm>&nbsp;<small>{}</small>{}</td>
-		<td class=x>
+		<td class=comm>&nbsp;<small>{}</small>{}
 		""".format(sep_class,hl_class,dt_d,dr,cr,x_bal,oatype,oaid,xid,oaname,comment,anchor)
 		# We can delete the transaction if it is the last one for both aid and oaid
 		if xid==maxxid:
 			crs.execute("SELECT MAX(xid) FROM xacts WHERE aid=?",[oaid])
 			if xid==res(crs):
 				r+="""
-				<div class=form>
-				<form action=del_xact method=post>
+				<form class=inline action=del_xact method=post>
 				<input type=hidden name=xid value="{}">
 				<input type=hidden name=aid value="{}">
-				<input type=submit value=X onClick="return confirmDeleteTransaction()">
+				<input type=submit value="&times;" onClick="return confirmDeleteTransaction()">
 				</form>
-				</div>
 				""".format(xid,aid)
 		r+="""
 		</td>
