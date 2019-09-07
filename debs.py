@@ -77,7 +77,7 @@ def application(environ,start_response):
 			elif p=="/creat_acct":
 				c,r,h=creat_acct(crs,environ)
 			elif p=="/close_acct":
-				c,r,h=close_acct(crs,qs)
+				c,r,h=close_acct(crs,environ)
 			else:
 				raise ValueError("Wrong access")
 	except ValueError as e:
@@ -567,8 +567,11 @@ def acct(crs,qs,err=None):
 	if bal==0 and cdt==0:
 		r+="""
 		<hr>
-		<div class=center>
-		<a class=red href="close_acct?aid={}" onClick="return confirmCloseAccount(\'{}\')">Close this account</a>
+		<div class="center form">
+		<form action=close_acct method=post>
+		<input type=hidden name=aid value="{}">
+		<input type=submit value="Close account" onClick="return confirmCloseAccount(\'{}\')">
+		</form>
 		</div>
 		""".format(aid,name)
 	# Cellar
@@ -792,9 +795,10 @@ def creat_acct(crs,environ):
 	# Return
 	return main(crs)
 
-def close_acct(crs,qs):
+def close_acct(crs,environ):
 	"""close account"""
 	# Get argument
+	qs=environ["wsgi.input"].readline().decode()
 	q=parse_qs(qs)
 	try:
 		aid=q["aid"][0]
