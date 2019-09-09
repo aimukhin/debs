@@ -427,6 +427,12 @@ def acct(crs,qs,err=None):
 	<a href=".">Back to list</a>
 	<hr>
 	""".format(int2cur(sb),int2cur(tdr),int2cur(tcr),int2cur(eb))
+	# Insert new transaction form
+	# (its items are referenced below via form= attribute)
+	r+="""
+	<form action=ins_xact id=ins_xact method=post>
+	</form>
+	"""
 	# Transactions
 	r+="""
 	<table class=full>
@@ -438,7 +444,6 @@ def acct(crs,qs,err=None):
 	<th class=opp>Opposing account</th>
 	<th class=comm>Comment</th>
 	</tr>
-	</table>
 	"""
 	# New transaction
 	if cdt==0 and maxdt<=edt:
@@ -447,23 +452,20 @@ def acct(crs,qs,err=None):
 		mm=d.month if err is None else err["mm"]
 		dd=d.day if err is None else err["dd"]
 		r+="""
-		<div class=form>
-		<form action=ins_xact method=post>
-		<table class=full>
 		<tr class=line>
 		<td class=date>
 		<a class=arr href="javascript:chgDate(-1)" title="day before">&larr;</a> 
-		<input type=text name=yyyy size=4 maxlength=4 class=w4 value="{}" id=y onchange="hlCurDate()">
-		<input type=text name=mm size=2 maxlength=2 class=w2 value="{}" id=m onchange="hlCurDate()">
-		<input type=text name=dd size=2 maxlength=2 class=w2 value="{}" id=d onchange="hlCurDate()">
+		<input form=ins_xact type=text name=yyyy size=4 maxlength=4 class=w4 value="{}" id=y onchange="hlCurDate()">
+		<input form=ins_xact type=text name=mm size=2 maxlength=2 class=w2 value="{}" id=m onchange="hlCurDate()">
+		<input form=ins_xact type=text name=dd size=2 maxlength=2 class=w2 value="{}" id=d onchange="hlCurDate()">
 		<a class=arr href="javascript:chgDate(+1)" title="day after">&rarr;</a>
 		</td>
-		<td class=dr><input type=text size=12 class=w12 name=dr value="{}"></td>
-		<td class=cr><input type=text size=12 class=w12 name=cr value="{}"></td>
-		<td class=bal><input type=text size=12 class=w12 name=newbal value="{}"></td>
+		<td class=dr><input form=ins_xact type=text size=12 class=w12 name=dr value="{}"></td>
+		<td class=cr><input form=ins_xact type=text size=12 class=w12 name=cr value="{}"></td>
+		<td class=bal><input form=ins_xact type=text size=12 class=w12 name=newbal value="{}"></td>
 		<td class=opp>
-		<input type=hidden name=aid value="{}">
-		<select name=oaid>
+		<input form=ins_xact type=hidden name=aid value="{}">
+		<select form=ins_xact name=oaid>
 		<option value="-1">&nbsp;</option>
 		""".format(yyyy,mm,dd,v(err,"dr"),v(err,"cr"),v(err,"newbal"),aid)
 		for atc,atn in atypes:
@@ -488,26 +490,19 @@ def acct(crs,qs,err=None):
 		</select>
 		</td>
 		<td class=comm>
-		<input type=text name=comment size=20 class=comm maxlength=255 value="{}">
-		<input type=submit value=Insert>
+		<input form=ins_xact type=text name=comment size=20 class=comm maxlength=255 value="{}">
+		<input form=ins_xact type=submit value=Insert>
 		</td>
 		</tr>
-		</table>
-		</form>
 		""".format(v(err,"comment"))
 	# Show error message
 	if err is not None:
 		r+="""
+		<tr class=line><td colspan=6>
 		<div class=center><span class=err>{}</span></div>
+		</td></tr>
 		""".format(err["msg"])
-	# Close form area
-	r+="""
-	</div>
-	"""
 	# Past transactions
-	r+="""
-	<table class=full>
-	"""
 	prev_year=None
 	prev_month=None
 	crs.execute("SELECT * FROM xacts WHERE aid=? AND ?<=dt AND dt<=? ORDER BY xid DESC",[aid,sdt,edt])
