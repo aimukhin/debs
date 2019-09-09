@@ -13,6 +13,7 @@ div.center { text-align: center; }
 div.form { background-color: #f0f0f0; }
 div.indent { margin-left: 5ch; }
 form.inline { display: inline; }
+input.inline { padding: 0; font-size: 75%; }
 input.comm { width: 75%; }
 input.w2 { width: 2ch; }
 input.w4 { width: 4ch; }
@@ -24,7 +25,6 @@ table td { padding: 2px; }
 table.center { margin: auto; }
 table.full { width: 100%; }
 td.r { text-align: right; }
-td.x { width: 2%; }
 th.date,td.date { width: 15%; text-align: left; }
 th.dr,td.dr { width: 10%; text-align: right; }
 th.cr,td.cr { width: 10%; text-align: right; }
@@ -549,7 +549,7 @@ def acct(crs,qs,err=None):
 				<form class=inline action=del_xact method=post>
 				<input type=hidden name=xid value="{}">
 				<input type=hidden name=aid value="{}">
-				<input type=submit value="&times;" onClick="return confirmDeleteTransaction()">
+				<input class=inline type=submit value="Delete" onClick="return confirmDeleteTransaction()">
 				</form>
 				""".format(xid,aid)
 		r+="""
