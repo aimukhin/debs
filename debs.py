@@ -10,7 +10,6 @@ decimal_sep=","
 style="""
 a.arr { text-decoration: none; }
 div.center { text-align: center; }
-div.form { background-color: #f0f0f0; }
 div.indent { margin-left: 5ch; }
 form.inline { display: inline; }
 input.inline { padding: 0; font-size: 75%; }
@@ -232,7 +231,6 @@ def main(crs,err=None):
 	# New account
 	r+="""
 	<hr>
-	<div class=form>
 	<form action=creat_acct method=post>
 	New account &nbsp;
 	<select name=atype>
@@ -254,10 +252,6 @@ def main(crs,err=None):
 		r+="""
 		<span class=err>{}</span>
 		""".format(err["msg"])
-	# Close form area
-	r+="""
-	</div>
-	"""
 	# Closed accounts
 	r+="""
 	<hr>
