@@ -28,7 +28,7 @@ th.date,td.date { width: 15%; text-align: left; }
 th.dr,td.dr { width: 10%; text-align: right; }
 th.cr,td.cr { width: 10%; text-align: right; }
 th.bal,td.bal { width: 15%; text-align: right; }
-th.opp,td.opp { width: 25%; text-align: right; }
+th.opp,td.opp { width: 20%; text-align: right; }
 th.comm,td.comm { text-align: center; }
 tr.hl { background-color: #ffff80; }
 tr.line { white-space: nowrap; }
