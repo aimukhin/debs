@@ -43,6 +43,7 @@ import sqlite3
 from datetime import date
 from html import escape
 from os.path import exists
+import os
 
 class BadInput(Exception):
 	"""invalid user input"""
@@ -53,7 +54,7 @@ def application(environ,start_response):
 	try:
 		# Connect to the database
 		cnx=None
-		db=environ["DB"]
+		db=os.environ["DB"]
 		if not exists(db):
 			raise sqlite3.Error("file does not exist")
 		cnx=sqlite3.connect(db)
