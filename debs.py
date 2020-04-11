@@ -61,7 +61,7 @@ def application(environ,start_response):
 		# Main selector
 		crs=cnx.cursor()
 		p=environ["PATH_INFO"]
-		qs=environ["QUERY_STRING"]
+		qs=environ.get("QUERY_STRING")
 		crs.execute("BEGIN") # execute each request in a transaction
 		with cnx:
 			if p=="/":
