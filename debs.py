@@ -58,7 +58,7 @@ class NoDBKey(Exception):
 def application(environ,start_response):
 	"""entry point"""
 	try:
-		# Connect to the database
+		# connect to the database
 		cnx=None
 		db=os.environ["DB"]
 		if not os.path.exists(db):
@@ -77,7 +77,7 @@ def application(environ,start_response):
 			c,r,h=ask_dbkey()
 			raise NoDBKey
 		crs.execute("PRAGMA key=\"{}\"".format(dbkey))
-		# Main selector
+		# main selector
 		qs=environ.get("QUERY_STRING")
 		crs.execute("BEGIN") # execute each request in a transaction
 		with cnx:
@@ -117,7 +117,7 @@ def application(environ,start_response):
 
 def ask_dbkey():
 	"""ask for a database key"""
-	r = """
+	r="""
 	<!DOCTYPE html>
 	<head>
 	<meta charset="UTF-8">
@@ -130,14 +130,14 @@ def ask_dbkey():
 	</body>
 	</html>
 	"""
-	# Return success
+	# return success
 	c="200 OK"
 	h=[("Content-type","text/html")]
 	return c,r,h
 
 def set_dbkey(crs,environ):
 	"""set a database key"""
-	# Get argument
+	# get argument
 	qs=environ["wsgi.input"].readline().decode()
 	q=parse_qs(qs)
 	# set key
@@ -236,7 +236,7 @@ def v(kv,k):
 
 def main(crs,err=None):
 	"""show main page"""
-	# Header
+	# header
 	r="""
 	<!DOCTYPE html>
 	<html>
@@ -249,11 +249,11 @@ def main(crs,err=None):
 	<title>Double-entry Bookkeeping System</title>
 	</head>
 	""".format(style)
-	# Body
+	# body
 	r+="""
 	<body>
 	"""
-	# Accounts
+	# accounts
 	totals={}
 	for atc,atn in atypes:
 		r+="""
@@ -281,7 +281,7 @@ def main(crs,err=None):
 		</table>
 		</div>
 		""".format(int2cur(totals[atc]))
-	# Verify accounting equation
+	# verify accounting equation
 	d=0
 	for atc in ("E","L","i"):
 		d+=totals[atc]
@@ -292,7 +292,7 @@ def main(crs,err=None):
 		r="Inconsistent database: accounting equation doesn't hold"
 		h=[("Content-type","text/plain")]
 		return c,r,h
-	# New account
+	# new account
 	r+="""
 	<hr>
 	<form action=creat_acct method=post>
@@ -311,12 +311,12 @@ def main(crs,err=None):
 	<input type=submit value=Create>
 	</form>
 	""".format(v(err,"aname"))
-	# Show error message
+	# show error message
 	if err is not None:
 		r+="""
 		<span class=err>{}</span>
 		""".format(err["msg"])
-	# Closed accounts
+	# closed accounts
 	r+="""
 	<hr>
 	<h3>Closed accounts</h3>
@@ -334,21 +334,21 @@ def main(crs,err=None):
 		r+="""
 		</div>
 		"""
-	# Cellar
+	# cellar
 	r+="""
 	</body>
 	</html>
 	"""
-	# Return success
+	# return success
 	c="200 OK"
 	h=[("Content-type","text/html")]
 	return c,r,h
 
 def acct(crs,qs,err=None):
 	"""show account statement page"""
-	# Get arguments
+	# get arguments
 	q=parse_qs(qs,keep_blank_values=True)
-	# Check the mandatory argument
+	# check the mandatory argument
 	try:
 		aid=q["aid"][0]
 	except KeyError:
@@ -356,9 +356,9 @@ def acct(crs,qs,err=None):
 	crs.execute("SELECT COUNT(*) FROM accts WHERE aid=?",[aid])
 	if res(crs)==0:
 		raise ValueError("Bad aid")
-	# Get optional argument
+	# get optional argument
 	hlxid=int(q["hlxid"][0]) if "hlxid" in q else None
-	# Get commonly used account properties
+	# get commonly used account properties
 	crs.execute("SELECT name,odt,cdt FROM accts WHERE aid=?",[aid])
 	aname,odt,cdt=crs.fetchone()
 	bal=balance(crs,aid)
@@ -370,9 +370,9 @@ def acct(crs,qs,err=None):
 	maxxid=res(crs)
 	if maxxid is None:
 		maxxid=0
-	# Find the statement period
+	# find the statement period
 	try:
-		# Try to get the statement period from the arguments
+		# try to get the statement period from the arguments
 		sy=int(q["syyyy"][0])
 		sm=int(q["smm"][0])
 		sd=int(q["sdd"][0])
@@ -384,13 +384,13 @@ def acct(crs,qs,err=None):
 		if sdt>edt:
 			raise Exception
 	except:
-		# If fails, revert to the whole account's lifetime
+		# if fails, revert to the whole account's lifetime
 		sdt=odt
 		if cdt==0:
 			edt=date.today().toordinal()
 		else:
 			edt=cdt
-	# Header
+	# header
 	r="""
 	<!DOCTYPE html>
 	<html>
@@ -440,7 +440,7 @@ def acct(crs,qs,err=None):
 	<title>Double-entry Bookkeeping System</title>
 	</head>
 	"""
-	# Basic statement info: start and end balances, and turnovers
+	# basic statement info: start and end balances, and turnovers
 	sb=eb=tdr=tcr=0
 	crs.execute("SELECT dt,dr,cr,bal FROM xacts WHERE aid=? ORDER BY xid ASC",[aid])
 	for (dt,dr,cr,b) in crs.fetchall():
@@ -455,7 +455,7 @@ def acct(crs,qs,err=None):
 				break
 	sdt_d=date.fromordinal(sdt)
 	edt_d=date.fromordinal(edt)
-	# Body
+	# body
 	r+="""
 	<body>
 	<div class=center>
@@ -485,13 +485,13 @@ def acct(crs,qs,err=None):
 	<a href=".">Back to list</a>
 	<hr>
 	""".format(int2cur(sb),int2cur(tdr),int2cur(tcr),int2cur(eb))
-	# Insert new transaction form
+	# insert new transaction form
 	# (its items are referenced below via form= attribute)
 	r+="""
 	<form action=ins_xact id=ins_xact method=post>
 	</form>
 	"""
-	# Transactions
+	# transactions
 	r+="""
 	<table class=full>
 	<tr class=line>
@@ -503,7 +503,7 @@ def acct(crs,qs,err=None):
 	<th class=comm>Comment</th>
 	</tr>
 	"""
-	# New transaction
+	# new transaction
 	if cdt==0 and maxdt<=edt:
 		d=date.today()
 		yyyy=d.year if err is None else err["yyyy"]
@@ -553,14 +553,14 @@ def acct(crs,qs,err=None):
 		</td>
 		</tr>
 		""".format(v(err,"comment"))
-	# Show error message
+	# show error message
 	if err is not None:
 		r+="""
 		<tr class=line><td colspan=6>
 		<div class=center><span class=err>{}</span></div>
 		</td></tr>
 		""".format(err["msg"])
-	# Past transactions
+	# past transactions
 	prev_year=None
 	prev_month=None
 	crs.execute("SELECT * FROM xacts WHERE aid=? AND ?<=dt AND dt<=? ORDER BY xid DESC",[aid,sdt,edt])
@@ -594,7 +594,7 @@ def acct(crs,qs,err=None):
 		<td class=opp><span class=atype>{}</span>&nbsp;<a href="acct?aid={}&amp;hlxid={}#hl">{}</a></td>
 		<td class=comm>&nbsp;<small>{}</small>{}
 		""".format(sep_class,hl_class,dt_d,dr,cr,x_bal,oatype,oaid,xid,oaname,comment,anchor)
-		# We can delete the transaction if it is the last one for both aid and oaid
+		# we can delete the transaction if it is the last one for both aid and oaid
 		if xid==maxxid:
 			crs.execute("SELECT MAX(xid) FROM xacts WHERE aid=?",[oaid])
 			if xid==res(crs):
@@ -612,7 +612,7 @@ def acct(crs,qs,err=None):
 	r+="""
 	</table>
 	"""
-	# Close the account
+	# close the account
 	if bal==0 and cdt==0:
 		r+="""
 		<hr>
@@ -623,19 +623,19 @@ def acct(crs,qs,err=None):
 		</form>
 		</div>
 		""".format(aid,aname)
-	# Cellar
+	# cellar
 	r+="""
 	</body>
 	</html>
 	"""
-	# Return success
+	# return success
 	c="200 OK"
 	h=[("Content-type","text/html")]
 	return c,r,h
 
 def ins_xact(crs,environ):
 	"""insert a new transaction"""
-	# Get arguments
+	# get arguments
 	try:
 		qs=environ["wsgi.input"].readline().decode()
 		q=parse_qs(qs,keep_blank_values=True)
@@ -650,7 +650,7 @@ def ins_xact(crs,environ):
 		comment=escape(q["comment"][0])
 	except KeyError:
 		raise ValueError("Wrong access")
-	# Check accounts
+	# check accounts
 	try:
 		aid=int(aid)
 	except ValueError:
@@ -665,18 +665,18 @@ def ins_xact(crs,environ):
 	crs.execute("SELECT COUNT(aid) FROM accts WHERE aid=? AND cdt=0",[oaid])
 	if res(crs)==0 and oaid!=-1:
 		raise ValueError("Non-existent oaid")
-	# Validate user input
+	# validate user input
 	try:
 		if oaid==-1:
 			raise BadInput("Please select the opposing account")
 		if aid==oaid:
 			raise BadInput("Transaction with the same account")
-		# Check date
+		# check date
 		try:
 			dt=date(int(yyyy),int(mm),int(dd)).toordinal()
 		except ValueError:
 			raise BadInput("Bad date")
-		# Check transaction values
+		# check transaction values
 		if dr=="":
 			dr="0"
 		try:
@@ -704,7 +704,7 @@ def ins_xact(crs,environ):
 				newbal=cur2int(arith(newbal))
 			except ValueError:
 				raise BadInput("Bad Balance")
-		# Check dates
+		# check dates
 		if dt>date.today().toordinal():
 			raise BadInput("Date cannot be in the future")
 		crs.execute("SELECT odt FROM accts WHERE aid=?",[aid])
@@ -720,7 +720,7 @@ def ins_xact(crs,environ):
 		if res(crs)!=0:
 			raise BadInput("Opposing account has newer transactions")
 	except BadInput as e:
-		# Fill error data
+		# fill error data
 		err=dict()
 		err["msg"]=str(e)
 		err["yyyy"]=q["yyyy"][0]
@@ -732,19 +732,19 @@ def ins_xact(crs,environ):
 		err["aid"]=q["aid"][0]
 		err["oaid"]=int(q["oaid"][0])
 		err["comment"]=escape(q["comment"][0])
-		# Return
+		# return
 		return acct(crs,"aid={}".format(aid),err)
-	# Input data OK, prepare to insert transaction
-	# Get account types
+	# input data OK, prepare to insert transaction
+	# get account types
 	crs.execute("SELECT type FROM accts WHERE aid=?",[aid])
 	atype=res(crs)
 	crs.execute("SELECT type FROM accts WHERE aid=?",[oaid])
 	oatype=res(crs)
-	# Get account balances
+	# get account balances
 	bal=balance(crs,aid)
 	obal=balance(crs,oaid)
 	if dr==0 and cr==0:
-		# Derive dr and cr from new and old balances
+		# derive dr and cr from new and old balances
 		if atype in ("E","L","i"):
 			if newbal>bal:
 				cr=newbal-bal
@@ -759,9 +759,9 @@ def ins_xact(crs,environ):
 			raise ValueError("Bad account type")
 	else:
 		newbal=new_balance(atype,bal,dr,cr)
-	# Compute new balance of the opposing account, with dr and cr exchanged
+	# compute new balance of the opposing account, with dr and cr exchanged
 	onewbal=new_balance(oatype,obal,cr,dr)
-	# Insert transaction
+	# insert transaction
 	crs.execute("SELECT MAX(xid) FROM xacts")
 	maxxid=res(crs)
 	if maxxid is None:
@@ -770,12 +770,12 @@ def ins_xact(crs,environ):
 		xid=maxxid+1
 	crs.execute("INSERT INTO xacts VALUES(?,?,?,?,?,?,?,?)",[xid,dt,aid,oaid,str(dr),str(cr),str(newbal),comment])
 	crs.execute("INSERT INTO xacts VALUES(?,?,?,?,?,?,?,?)",[xid,dt,oaid,aid,str(cr),str(dr),str(onewbal),comment])
-	# Return
+	# return
 	return acct(crs,"aid={}".format(aid))
 
 def del_xact(crs,environ):
 	"""delete transaction"""
-	# Get arguments
+	# get arguments
 	qs=environ["wsgi.input"].readline().decode()
 	q=parse_qs(qs)
 	try:
@@ -783,7 +783,7 @@ def del_xact(crs,environ):
 		aid=q["aid"][0]
 	except KeyError:
 		raise ValueError("Wrong access")
-	# Check accounts
+	# check accounts
 	crs.execute("SELECT COUNT(aid) FROM accts WHERE aid=? AND cdt=0",[aid])
 	if res(crs)==0:
 		raise ValueError("Bad aid")
@@ -801,14 +801,14 @@ def del_xact(crs,environ):
 	crs.execute("SELECT COUNT(*) FROM xacts WHERE xid>? AND aid=?",[xid,oaid])
 	if res(crs)!=0:
 		raise ValueError("Opposing account has newer transactions")
-	# Delete transaction
+	# delete transaction
 	crs.execute("DELETE FROM xacts WHERE xid=?",[xid])
-	# Return
+	# return
 	return acct(crs,"aid={}".format(aid))
 
 def creat_acct(crs,environ):
 	"""create a new account"""
-	# Get arguments
+	# get arguments
 	qs=environ["wsgi.input"].readline().decode()
 	q=parse_qs(qs,keep_blank_values=True)
 	try:
@@ -816,10 +816,10 @@ def creat_acct(crs,environ):
 		aname=escape(q["aname"][0])
 	except KeyError:
 		raise ValueError("Wrong access")
-	# Check argument
+	# check argument
 	if not atype in [x for x,_ in atypes]+[""]:
 		raise ValueError("Wrong account type")
-	# Validate user input
+	# validate user input
 	try:
 		if atype=="":
 			raise BadInput("Please select the account type")
@@ -829,32 +829,32 @@ def creat_acct(crs,environ):
 		if res(crs)!=0:
 			raise BadInput("Account with the same name already exists")
 	except BadInput as e:
-		# Fill error data
+		# fill error data
 		err=dict()
 		err["msg"]=str(e)
 		err["atype"]=atype
 		err["aname"]=aname
-		# Return
+		# return
 		return main(crs,err)
 	except:
-		# Re-raise other exceptions
+		# re-raise other exceptions
 		raise
-	# Create account
+	# create account
 	odt=date.today().toordinal()
 	crs.execute("INSERT INTO accts VALUES (NULL,?,?,?,0)",[atype,aname,odt])
-	# Return
+	# return
 	return main(crs)
 
 def close_acct(crs,environ):
 	"""close account"""
-	# Get argument
+	# get argument
 	qs=environ["wsgi.input"].readline().decode()
 	q=parse_qs(qs)
 	try:
 		aid=q["aid"][0]
 	except KeyError:
 		raise ValueError("Wrong access")
-	# Check argument
+	# check argument
 	crs.execute("SELECT COUNT(*) FROM accts WHERE aid=?",[aid])
 	if res(crs)==0:
 		raise ValueError("Wrong aid")
@@ -863,8 +863,8 @@ def close_acct(crs,environ):
 		raise ValueError("Account already closed")
 	if balance(crs,aid)!=0:
 		raise ValueError("Non-zero balance")
-	# Close account
+	# close account
 	now=date.today().toordinal()
 	crs.execute("UPDATE accts SET cdt=? WHERE aid=?",[now,aid])
-	# Return
+	# return
 	return acct(crs,"aid={}".format(aid))
