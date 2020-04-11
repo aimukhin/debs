@@ -39,13 +39,20 @@ tr.sep_tot td { border-top: 2px solid #c0c0c0; }
 """
 
 from urllib.parse import parse_qs,quote_plus,urlencode
-import sqlite3
+from pysqlcipher3 import dbapi2 as sqlite3
 from datetime import date
 from html import escape
 import os
 
+# database key
+dbkey=None
+
 class BadInput(Exception):
 	"""invalid user input"""
+	pass
+
+class NoDBKey(Exception):
+	"""no database key set"""
 	pass
 
 def application(environ,start_response):
@@ -58,9 +65,19 @@ def application(environ,start_response):
 			raise sqlite3.Error("file does not exist")
 		cnx=sqlite3.connect(db)
 		cnx.isolation_level=None # we manage transactions explicitly
-		# Main selector
 		crs=cnx.cursor()
+		# deal with database key
 		p=environ["PATH_INFO"]
+		if p=="/set_dbkey":
+			# set database key
+			c,r,h=set_dbkey(crs,environ)
+			raise NoDBKey
+		if dbkey==None or p=="/ask_dbkey":
+			# ask for a database key
+			c,r,h=ask_dbkey()
+			raise NoDBKey
+		crs.execute("PRAGMA key=\"{}\"".format(dbkey))
+		# Main selector
 		qs=environ.get("QUERY_STRING")
 		crs.execute("BEGIN") # execute each request in a transaction
 		with cnx:
@@ -90,11 +107,58 @@ def application(environ,start_response):
 		c="400 Bad Request"
 		r="Parameter expected: {}".format(e)
 		h=[("Content-type","text/plain")]
+	except NoDBKey:
+		pass
 	if cnx:
 		cnx.close()
 	h+=[("Cache-Control","max-age=0")]
 	start_response(c,h)
 	return [r.encode()]
+
+def ask_dbkey():
+	"""ask for a database key"""
+	r = """
+	<!DOCTYPE html>
+	<head>
+	<meta charset="UTF-8">
+	<title>Double-entry Bookkeeping System</title>
+	</head>
+	<body>
+	<form action=set_dbkey method=post>
+	Key: <input type=password name=dbkey> <input type=submit>
+	</form>
+	</body>
+	</html>
+	"""
+	# Return success
+	c="200 OK"
+	h=[("Content-type","text/html")]
+	return c,r,h
+
+def set_dbkey(crs,environ):
+	"""set a database key"""
+	# Get argument
+	qs=environ["wsgi.input"].readline().decode()
+	q=parse_qs(qs)
+	# set key
+	try:
+		try:
+			global dbkey
+			dbkey=q["dbkey"][0]
+		except:
+			dbkey=""
+		# try key
+		crs.execute("PRAGMA key=\"{}\"".format(dbkey))
+		crs.execute("SELECT COUNT(*) FROM sqlite_master")
+		# if ok, return to the main page
+		h=[("Location",".")]
+	except sqlite3.Error:
+		# if key is bad, ask again
+		h=[("Location","ask_dbkey")]
+	# return redirect
+	c="303 See Other"
+	r=""
+	return c,r,h
 
 atypes=[("E","Equity"),("A","Assets"),("L","Liabilities"),("i","Income"),("e","Expenses")]
 
