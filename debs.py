@@ -50,8 +50,8 @@ class BadInput(Exception):
 	"""invalid user input"""
 	pass
 
-class NoDBKey(Exception):
-	"""no database key set"""
+class BadDBKey(Exception):
+	"""bad database key"""
 	pass
 
 def application(environ,start_response):
@@ -67,15 +67,21 @@ def application(environ,start_response):
 		crs=cnx.cursor()
 		# deal with database key
 		p=environ["PATH_INFO"]
-		if p=="/set_dbkey":
-			# set database key
-			c,r,h=set_dbkey(crs,environ)
-			raise NoDBKey
-		if dbkey==None or p=="/ask_dbkey":
+		if p=="/ask_dbkey":
 			# ask for a database key
 			c,r,h=ask_dbkey()
-			raise NoDBKey
-		crs.execute("PRAGMA key=\"x'{}'\"".format(dbkey))
+			raise BadDBKey
+		if p=="/set_dbkey":
+			# set global database key
+			global dbkey
+			dbkey=get_dbkey(environ)
+			# try to show the main page with the new key
+			c,r,h="303 See Other","",[("Location",".")]
+			raise BadDBKey
+		if not valid_dbkey(crs,dbkey):
+			# key is bad, ask for key
+			c,r,h="303 See Other","",[("Location","ask_dbkey")]
+			raise BadDBKey
 		# main selector
 		qs=environ.get("QUERY_STRING")
 		crs.execute("BEGIN") # execute each request in a transaction
@@ -106,7 +112,7 @@ def application(environ,start_response):
 		c="400 Bad Request"
 		r="Parameter expected: {}".format(e)
 		h=[("Content-type","text/plain")]
-	except NoDBKey:
+	except BadDBKey:
 		pass
 	if cnx:
 		cnx.close()
@@ -134,38 +140,31 @@ def ask_dbkey():
 	h=[("Content-type","text/html")]
 	return c,r,h
 
-def set_dbkey(crs,environ):
-	"""set a database key"""
-	# get argument
-	qs=environ["wsgi.input"].readline().decode()
-	q=parse_qs(qs)
-	# set key
+def get_dbkey(environ):
+	"""get a database key submitted in a POST query"""
+	q=parse_qs(environ["wsgi.input"].readline().decode())
 	try:
-		# get parameter
-		try:
-			k=q["dbkey"][0]
-		except:
-			k=""
-		# drop everything except hexadecimal digits
+		# get argument
+		k=q["dbkey"][0]
+		# sanitize: drop everything except hexadecimal digits
 		k2=""
 		for c in k:
 			if c in "0123456789abcdefABCDEF":
 				k2+=c
-		# try key
-		crs.execute("PRAGMA key=\"x'{}'\"".format(k2))
+		# return
+		return k2
+	except:
+		return None
+
+def valid_dbkey(crs,key):
+	"""check the key"""
+	try:
+		if key is not None:
+			crs.execute("PRAGMA key=\"x'{}'\"".format(key))
 		crs.execute("SELECT COUNT(*) FROM sqlite_master")
-		# if ok, set the global key
-		global dbkey
-		dbkey=k2
-		# return to the main page
-		h=[("Location",".")]
-	except sqlite3.Error:
-		# if key is bad, ask again
-		h=[("Location","ask_dbkey")]
-	# return redirect
-	c="303 See Other"
-	r=""
-	return c,r,h
+	except sqlite3.Error as e:
+		return False
+	return True
 
 atypes=[("E","Equity"),("A","Assets"),("L","Liabilities"),("i","Income"),("e","Expenses")]
 
