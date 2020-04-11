@@ -42,7 +42,6 @@ from urllib.parse import parse_qs,quote_plus,urlencode
 import sqlite3
 from datetime import date
 from html import escape
-from os.path import exists
 import os
 
 class BadInput(Exception):
@@ -55,7 +54,7 @@ def application(environ,start_response):
 		# Connect to the database
 		cnx=None
 		db=os.environ["DB"]
-		if not exists(db):
+		if not os.path.exists(db):
 			raise sqlite3.Error("file does not exist")
 		cnx=sqlite3.connect(db)
 		cnx.isolation_level=None # we manage transactions explicitly
