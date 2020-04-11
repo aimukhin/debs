@@ -8,11 +8,9 @@ thousand_sep=" "
 decimal_sep=","
 
 style="""
-a.arr { text-decoration: none; }
 div.center { text-align: center; }
 div.indent { margin-left: 5ch; }
 form.inline { display: inline; }
-input.inline { padding: 0; font-size: 75%; }
 input.comm { width: 75%; }
 input.w2 { width: 2ch; }
 input.w4 { width: 4ch; }
@@ -409,33 +407,6 @@ def acct(crs,qs,err=None):
 	function confirmDeleteTransaction() {
 	return confirm("Are you sure to delete this transaction?");
 	}
-	function hlCurDate() {
-	var cur=new Date();
-	var y=document.getElementById("y");
-	var m=document.getElementById("m");
-	var d=document.getElementById("d");
-	var now=true;
-	now=now&&(y.value==cur.getFullYear());
-	y.style.color=(now)?"":"#808080";
-	now=now&&(m.value==cur.getMonth()+1);
-	m.style.color=(now)?"":"#808080";
-	now=now&&(d.value==cur.getDate());
-	d.style.color=(now)?"":"#808080";
-	}
-	function chgDate(delta) {
-	var td=new Date();
-	var y=document.getElementById("y");
-	var m=document.getElementById("m");
-	var d=document.getElementById("d");
-	td.setFullYear(y.value);
-	td.setMonth(m.value-1);
-	td.setDate(d.value);
-	td.setDate(td.getDate()+delta);
-	y.value=td.getFullYear();
-	m.value=td.getMonth()+1;
-	d.value=td.getDate();
-	hlCurDate();
-	}
 	</script>
 	<title>Double-entry Bookkeeping System</title>
 	</head>
@@ -512,11 +483,9 @@ def acct(crs,qs,err=None):
 		r+="""
 		<tr class=line>
 		<td class=date>
-		<a class=arr href="javascript:chgDate(-1)" title="day before">&larr;</a> 
 		<input form=ins_xact type=text name=yyyy size=4 maxlength=4 class=w4 value="{}" id=y onchange="hlCurDate()">
 		<input form=ins_xact type=text name=mm size=2 maxlength=2 class=w2 value="{}" id=m onchange="hlCurDate()">
 		<input form=ins_xact type=text name=dd size=2 maxlength=2 class=w2 value="{}" id=d onchange="hlCurDate()">
-		<a class=arr href="javascript:chgDate(+1)" title="day after">&rarr;</a>
 		</td>
 		<td class=dr><input form=ins_xact type=text size=12 class=w12 name=dr value="{}"></td>
 		<td class=cr><input form=ins_xact type=text size=12 class=w12 name=cr value="{}"></td>
@@ -602,7 +571,7 @@ def acct(crs,qs,err=None):
 				<form class=inline action=del_xact method=post>
 				<input type=hidden name=xid value="{}">
 				<input type=hidden name=aid value="{}">
-				<input class=inline type=submit value="Delete" onClick="return confirmDeleteTransaction()">
+				<input type=submit value="Delete" onClick="return confirmDeleteTransaction()">
 				</form>
 				""".format(xid,aid)
 		r+="""
