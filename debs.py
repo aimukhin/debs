@@ -75,7 +75,7 @@ def application(environ,start_response):
 			# ask for a database key
 			c,r,h=ask_dbkey()
 			raise NoDBKey
-		crs.execute("PRAGMA key=\"{}\"".format(dbkey))
+		crs.execute("PRAGMA key=\"x'{}'\"".format(dbkey))
 		# main selector
 		qs=environ.get("QUERY_STRING")
 		crs.execute("BEGIN") # execute each request in a transaction
@@ -141,15 +141,23 @@ def set_dbkey(crs,environ):
 	q=parse_qs(qs)
 	# set key
 	try:
+		# get parameter
 		try:
-			global dbkey
-			dbkey=q["dbkey"][0]
+			k=q["dbkey"][0]
 		except:
-			dbkey=""
+			k=""
+		# drop everything except hexadecimal digits
+		k2=""
+		for c in k:
+			if c in "0123456789abcdefABCDEF":
+				k2+=c
 		# try key
-		crs.execute("PRAGMA key=\"{}\"".format(dbkey))
+		crs.execute("PRAGMA key=\"x'{}'\"".format(k2))
 		crs.execute("SELECT COUNT(*) FROM sqlite_master")
-		# if ok, return to the main page
+		# if ok, set the global key
+		global dbkey
+		dbkey=k2
+		# return to the main page
 		h=[("Location",".")]
 	except sqlite3.Error:
 		# if key is bad, ask again
