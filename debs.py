@@ -147,12 +147,7 @@ def get_dbkey(environ):
 		# get argument
 		k=q["dbkey"][0]
 		# sanitize: drop everything except hexadecimal digits
-		k2=""
-		for c in k:
-			if c in "0123456789abcdefABCDEF":
-				k2+=c
-		# return
-		return k2
+		return ''.join(filter(lambda x: x in "0123456789abcdefABCDEF",k))
 	except:
 		return None
 
