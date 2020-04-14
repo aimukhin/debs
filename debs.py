@@ -61,7 +61,14 @@ def application(environ,start_response):
 	try:
 		# connect to the database
 		cnx=None
-		db=os.environ["DB"]
+		if "DB" in os.environ:
+			# try OS environment
+			db=os.environ["DB"]
+		elif "DB" in environ:
+			# try request environment
+			db=environ["DB"]
+		else:
+			raise sqlite3.Error("no file given")
 		if not os.path.exists(db):
 			raise sqlite3.Error("file does not exist")
 		cnx=sqlite3.connect(db)
