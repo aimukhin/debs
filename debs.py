@@ -55,6 +55,8 @@ class BadDBKey(Exception):
 	pass
 
 def application(environ,start_response):
+	# global database key
+	global dbkey
 	"""entry point"""
 	try:
 		# connect to the database
@@ -73,10 +75,15 @@ def application(environ,start_response):
 			raise BadDBKey
 		if p=="/set_dbkey":
 			# set global database key
-			global dbkey
 			dbkey=get_dbkey(environ)
 			# try to show the main page with the new key
 			c,r,h="303 See Other","",[("Location",".")]
+			raise BadDBKey
+		if p=="/clr_dbkey":
+			# clear database key
+			dbkey=None
+			# redirect to ask key
+			c,r,h="303 See Other","",[("Location","ask_dbkey")]
 			raise BadDBKey
 		if not valid_dbkey(crs,dbkey):
 			# key is bad, ask for key
@@ -334,6 +341,12 @@ def main(crs,err=None):
 			""".format(aid,name)
 		r+="""
 		</div>
+		"""
+	# show clear key link
+	if dbkey is not None:
+		r+="""
+		<hr>
+		<a href="clr_dbkey">Close session</a>
 		"""
 	# cellar
 	r+="""
