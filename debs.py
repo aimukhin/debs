@@ -131,6 +131,7 @@ def ask_dbkey():
 	"""ask for a database key"""
 	r="""
 	<!DOCTYPE html>
+	<html lang="en">
 	<head>
 	<meta charset="UTF-8">
 	<title>Double-entry Bookkeeping System</title>
@@ -247,7 +248,7 @@ def main(crs,err=None):
 	# header
 	r="""
 	<!DOCTYPE html>
-	<html>
+	<html lang="en">
 	<head>
 	<meta charset="UTF-8">
 	<meta name="format-detection" content="telephone=no">
@@ -407,7 +408,7 @@ def acct(crs,qs,err=None):
 	# header
 	r="""
 	<!DOCTYPE html>
-	<html>
+	<html lang="en">
 	<head>
 	<meta charset="UTF-8">
 	<meta name="format-detection" content="telephone=no">
