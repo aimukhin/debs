@@ -7,7 +7,8 @@ big numbers using exact integer arithmetic.
 
 ## Requirements
 The program is written in Python 3 and intended to be run by a web
-server as a WSGI application. It uses SQLite for data storage.
+server as a WSGI application. If available, it uses SQLCipher for data
+storage. Otherwise, it defaults to plain SQLite.
 
 ## Install
 Arrange your web server to run the program as a WSGI application. Put
@@ -15,6 +16,11 @@ the database file wherever you like, only make sure the database file
 and its parent directory are writable by the user from whom the web
 server is running. Pass the database file location to the program in the
 `DB` environment variable.
+
+## Caveat
+For performance reasons, the program does not support SQLCipher
+passphrases, and instead asks for raw keys, expected as 64-character
+strings of hexadecimal digits.
 
 ## Screenshots
 ### The list of accounts:
