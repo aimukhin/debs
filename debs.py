@@ -38,10 +38,15 @@ tr.sep_tot td { border-top: 2px solid #c0c0c0; }
 """
 
 from urllib.parse import parse_qs,quote_plus,urlencode
-from pysqlcipher3 import dbapi2 as sqlite3
 from datetime import date
 from html import escape
 import os
+try:
+	from pysqlcipher3 import dbapi2 as sqlite3
+	sqlc=True
+except ModuleNotFoundError:
+	import sqlite3
+	sqlc=False
 
 # database key
 dbkey=None
@@ -76,26 +81,27 @@ def application(environ,start_response):
 		crs=cnx.cursor()
 		# deal with database key
 		p=environ["PATH_INFO"]
-		if p=="/ask_dbkey":
-			# ask for a database key
-			c,r,h=ask_dbkey()
-			raise BadDBKey
-		if p=="/set_dbkey":
-			# set global database key
-			dbkey=get_dbkey(environ)
-			# try to show the main page with the new key
-			c,r,h="303 See Other","",[("Location",".")]
-			raise BadDBKey
-		if p=="/clr_dbkey":
-			# clear database key
-			dbkey=None
-			# redirect to ask key
-			c,r,h="303 See Other","",[("Location","ask_dbkey")]
-			raise BadDBKey
-		if not valid_dbkey(crs,dbkey):
-			# key is bad, ask for key
-			c,r,h="303 See Other","",[("Location","ask_dbkey")]
-			raise BadDBKey
+		if sqlc:
+			if p=="/ask_dbkey":
+				# ask for a database key
+				c,r,h=ask_dbkey()
+				raise BadDBKey
+			if p=="/set_dbkey":
+				# set global database key
+				dbkey=get_dbkey(environ)
+				# try to show the main page with the new key
+				c,r,h="303 See Other","",[("Location",".")]
+				raise BadDBKey
+			if p=="/clr_dbkey":
+				# clear database key
+				dbkey=None
+				# redirect to ask key
+				c,r,h="303 See Other","",[("Location","ask_dbkey")]
+				raise BadDBKey
+			if not valid_dbkey(crs,dbkey):
+				# key is bad, ask for key
+				c,r,h="303 See Other","",[("Location","ask_dbkey")]
+				raise BadDBKey
 		# main selector
 		qs=environ.get("QUERY_STRING")
 		crs.execute("BEGIN") # execute each request in a transaction
