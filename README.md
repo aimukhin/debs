@@ -16,7 +16,7 @@ uses SQLCipher for data storage. Otherwise, it defaults to plain SQLite.
 
 ## Caveat
 For performance reasons, the program does not support SQLCipher
-passphrases, and instead asks for raw keys, expected as 64-character
+passphrases, and asks instead for raw keys, expected as 64-character
 strings of hexadecimal digits.
 
 ## Screenshots
@@ -24,6 +24,9 @@ strings of hexadecimal digits.
 ![](docs/list.png)
 ### An account page:
 ![](docs/acct.png)
+
+## Customization
+Thousand and decimal separators, and stylesheet are easily customized.
 
 ## Compliance
 The program produces HTML5 markup with a CSS3 style sheet.
