@@ -1,9 +1,11 @@
 # debs
 A simple web-based double-entry bookkeeping system.
 
-## Overview
-The system supports all basic account types, and deals with arbitrary
-big numbers with exact integer arithmetic. Database can be encrypted.
+## Features
+- Account types: equity, assets, liabilities, income, and expenses.
+- Currency-agnostic.
+- Arbitrary precision integer arithmetic.
+- Encrypted database.
 
 ## Requirements
 The program is a WSGI application written in Python 3. If available, it
