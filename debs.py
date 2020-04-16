@@ -44,7 +44,7 @@ import os
 try:
 	from pysqlcipher3 import dbapi2 as sqlite3
 	sqlc=True
-except ModuleNotFoundError:
+except:
 	import sqlite3
 	sqlc=False
 
