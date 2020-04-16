@@ -41,12 +41,11 @@ from urllib.parse import parse_qs,quote_plus,urlencode
 from datetime import date
 from html import escape
 import os
+import sys
 try:
 	from pysqlcipher3 import dbapi2 as sqlite3
-	sqlc=True
 except:
 	import sqlite3
-	sqlc=False
 
 # database key
 dbkey=None
@@ -81,7 +80,7 @@ def application(environ,start_response):
 		crs=cnx.cursor()
 		# deal with database key
 		p=environ["PATH_INFO"]
-		if sqlc:
+		if "pysqlcipher3" in sys.modules:
 			if p=="/ask_dbkey":
 				# ask for a database key
 				c,r,h=ask_dbkey()
