@@ -3,9 +3,7 @@ A simple web-based double-entry bookkeeping system.
 
 ## Overview
 The system supports all basic account types, and deals with arbitrary
-big numbers with exact integer arithmetic. The interface is quite
-straightforward. For convenience, all monetary input fields accept not
-mere numbers, but arithmetic expressions.
+big numbers with exact integer arithmetic. Database can be encrypted.
 
 ## Requirements
 The program is a WSGI application written in Python 3. If available, it
@@ -26,7 +24,8 @@ strings of hexadecimal digits.
 ![](docs/acct.png)
 
 ## Customization
-Thousand and decimal separators, and stylesheet are easily customized.
+Decimal point, thousand separator, and the stylesheet are easily
+customized.
 
 ## Compliance
 The program produces HTML5 markup with a CSS3 style sheet.
