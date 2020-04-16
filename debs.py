@@ -59,9 +59,9 @@ class BadDBKey(Exception):
 	pass
 
 def application(environ,start_response):
+	"""entry point"""
 	# global database key
 	global dbkey
-	"""entry point"""
 	try:
 		# connect to the database
 		cnx=None
@@ -230,7 +230,7 @@ def res(crs):
 	return crs.fetchone()[0]
 
 def balance(crs,aid):
-	"""returns the current balance of account aid"""
+	"""return the current balance of account aid"""
 	crs.execute("SELECT max(xid) FROM xacts WHERE aid=?",[aid])
 	maxxid=res(crs)
 	if maxxid is not None:
@@ -240,7 +240,7 @@ def balance(crs,aid):
 		return 0
 
 def new_balance(atype,bal,dr,cr):
-	"""computes the new balance after transaction"""
+	"""compute the new balance after transaction"""
 	if atype in ("E","L","i"):
 		return bal+cr-dr
 	elif atype in ("A","e"):
@@ -249,7 +249,7 @@ def new_balance(atype,bal,dr,cr):
 		raise ValueError("Bad account type")
 
 def v(kv,k):
-	"""returns the value of key or empty string"""
+	"""return the value of key or empty string"""
 	try:
 		return kv[k]
 	except:
