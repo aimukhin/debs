@@ -4,10 +4,10 @@ A simple web-based double-entry bookkeeping system.
 ## Features
 - Account types: equity, assets, liabilities, income, and expenses.
 - Currency-agnostic.
-- Arbitrary precision integer arithmetic.
+- Arbitrary-precision integer arithmetic.
 - Encrypted database.
 
-## Requirements
+## Description
 The program is a WSGI application written in Python 3. If available, it
 uses SQLCipher for data storage. Otherwise, it defaults to plain SQLite.
 
@@ -26,7 +26,7 @@ strings of hexadecimal digits.
 ![](docs/acct.png)
 
 ## Customization
-Decimal point, thousand separator, and the stylesheet are easily
+Decimal point, thousand separator, and style sheet are easily
 customized.
 
 ## Compliance
