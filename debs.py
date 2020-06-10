@@ -17,7 +17,6 @@ input.w4 { width: 4ch; }
 input.w12 { width: 12ch; }
 span.atype { color: #c0c0c0; }
 span.err { color: red; }
-span.mon { font-family: monospace; font-weight: bold; }
 table { border-spacing: 0; }
 table td { padding: 2px; }
 table.center { margin: auto; }
@@ -223,7 +222,7 @@ def int2cur(v):
 		r=c+r
 	if v<0:
 		r="&minus;"+r
-	return "<span class=mon>{}</span>".format(r)
+	return r
 
 def res(crs):
 	"""return the only result of a transaction"""
