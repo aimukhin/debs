@@ -511,9 +511,9 @@ def acct(crs,qs,err=None):
 		r+="""
 		<tr class=line>
 		<td class=date>
-		<input form=ins_xact type=text name=yyyy size=4 maxlength=4 class=w4 value="{}" id=y onchange="hlCurDate()">
-		<input form=ins_xact type=text name=mm size=2 maxlength=2 class=w2 value="{}" id=m onchange="hlCurDate()">
-		<input form=ins_xact type=text name=dd size=2 maxlength=2 class=w2 value="{}" id=d onchange="hlCurDate()">
+		<input form=ins_xact type=text name=yyyy size=4 maxlength=4 class=w4 value="{}">
+		<input form=ins_xact type=text name=mm size=2 maxlength=2 class=w2 value="{}">
+		<input form=ins_xact type=text name=dd size=2 maxlength=2 class=w2 value="{}">
 		</td>
 		<td class=dr><input form=ins_xact type=text size=12 class=w12 name=dr value="{}"></td>
 		<td class=cr><input form=ins_xact type=text size=12 class=w12 name=cr value="{}"></td>
