@@ -484,12 +484,6 @@ def acct(crs,qs,err=None):
 	<a href=".">Back to list</a>
 	<hr>
 	""".format(int2cur(sb),int2cur(tdr),int2cur(tcr),int2cur(eb))
-	# insert new transaction form
-	# (its items are referenced below via form= attribute)
-	r+="""
-	<form action=ins_xact id=ins_xact method=post>
-	</form>
-	"""
 	# transactions
 	r+="""
 	<table class=full>
@@ -509,18 +503,21 @@ def acct(crs,qs,err=None):
 		mm=d.month if err is None else err["mm"]
 		dd=d.day if err is None else err["dd"]
 		r+="""
+		<tr class=line><td colspan=6>
+		<form action=ins_xact method=post>
+		<table class=full>
 		<tr class=line>
 		<td class=date>
-		<input form=ins_xact type=text name=yyyy size=4 maxlength=4 class=w4 value="{}">
-		<input form=ins_xact type=text name=mm size=2 maxlength=2 class=w2 value="{}">
-		<input form=ins_xact type=text name=dd size=2 maxlength=2 class=w2 value="{}">
+		<input type=text name=yyyy size=4 maxlength=4 class=w4 value="{}">
+		<input type=text name=mm size=2 maxlength=2 class=w2 value="{}">
+		<input type=text name=dd size=2 maxlength=2 class=w2 value="{}">
 		</td>
-		<td class=dr><input form=ins_xact type=text size=12 class=w12 name=dr value="{}"></td>
-		<td class=cr><input form=ins_xact type=text size=12 class=w12 name=cr value="{}"></td>
-		<td class=bal><input form=ins_xact type=text size=12 class=w12 name=newbal value="{}"></td>
+		<td class=dr><input type=text size=12 class=w12 name=dr value="{}"></td>
+		<td class=cr><input type=text size=12 class=w12 name=cr value="{}"></td>
+		<td class=bal><input type=text size=12 class=w12 name=newbal value="{}"></td>
 		<td class=opp>
-		<input form=ins_xact type=hidden name=aid value="{}">
-		<select form=ins_xact name=oaid>
+		<input type=hidden name=aid value="{}">
+		<select name=oaid>
 		<option value="-1">&nbsp;</option>
 		""".format(yyyy,mm,dd,v(err,"dr"),v(err,"cr"),v(err,"newbal"),aid)
 		for atc,atn in atypes:
@@ -545,10 +542,13 @@ def acct(crs,qs,err=None):
 		</select>
 		</td>
 		<td class=comm>
-		<input form=ins_xact type=text name=comment size=20 class=comm maxlength=255 value="{}">
-		<input form=ins_xact type=submit value=Insert>
+		<input type=text name=comment size=20 class=comm maxlength=255 value="{}">
+		<input type=submit value=Insert>
 		</td>
 		</tr>
+		</table>
+		</form>
+		</td></tr>
 		""".format(v(err,"comment"))
 	# show error message
 	if err is not None:
