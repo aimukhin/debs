@@ -28,7 +28,6 @@ th.cr,td.cr { width: 10%; text-align: right; }
 th.bal,td.bal { width: 15%; text-align: right; }
 th.opp,td.opp { width: 20%; text-align: right; }
 th.comm,td.comm { text-align: center; }
-tr.hl { background-color: #ffff80; }
 tr.line { white-space: nowrap; }
 tr.sep td { border-top: 2px solid #f0f0f0; }
 tr.sep_month td { border-top: 2px solid #c0c0c0; }
@@ -382,8 +381,6 @@ def acct(crs,qs,err=None):
 	crs.execute("SELECT COUNT(*) FROM accts WHERE aid=?",[aid])
 	if res(crs)==0:
 		raise ValueError("Bad aid")
-	# get optional argument
-	hlxid=int(q["hlxid"][0]) if "hlxid" in q else None
 	# get commonly used account properties
 	crs.execute("SELECT name,odt,cdt FROM accts WHERE aid=?",[aid])
 	aname,odt,cdt=crs.fetchone()
@@ -576,21 +573,19 @@ def acct(crs,qs,err=None):
 			sep_class="sep_month"
 		else:
 			sep_class="sep"
-		hl_class="hl" if xid==hlxid else ""
-		anchor="<a id=hl></a>" if xid==hlxid else ""
 		prev_year=x_year
 		prev_month=x_month
 		crs.execute("SELECT type,name FROM accts WHERE aid=?",[oaid])
 		oatype,oaname=crs.fetchone()
 		r+="""
-		<tr class="line {} {}">
+		<tr class="line {}">
 		<td class=date>{}</td>
 		<td class=dr>{}</td>
 		<td class=cr>{}</td>
 		<td class=bal>{}</td>
-		<td class=opp><span class=atype>{}</span>&nbsp;<a href="acct?aid={}&amp;hlxid={}#hl">{}</a></td>
-		<td class=comm>&nbsp;<small>{}</small>{}
-		""".format(sep_class,hl_class,dt_d,dr,cr,x_bal,oatype,oaid,xid,oaname,comment,anchor)
+		<td class=opp><span class=atype>{}</span>&nbsp;{}</td>
+		<td class=comm>&nbsp;<small>{}</small>
+		""".format(sep_class,dt_d,dr,cr,x_bal,oatype,oaname,comment)
 		# we can delete the transaction if it is the last one for both aid and oaid
 		if xid==maxxid:
 			crs.execute("SELECT MAX(xid) FROM xacts WHERE aid=?",[oaid])
