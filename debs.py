@@ -166,7 +166,7 @@ def get_dbkey(environ):
         k=q["dbkey"][0]
         # sanitize: drop everything except hexadecimal digits
         return ''.join(filter(lambda x: x in "0123456789abcdefABCDEF",k))
-    except:
+    except Exception:
         return None
 
 def valid_dbkey(crs,key):
@@ -206,8 +206,8 @@ def arith(s):
                 raise ValueError
         # now it's safe to evaluate it
         return str(eval(s))
-    except:
-        raise ValueError
+    except Exception as e:
+        raise ValueError from e
 
 def int2cur(v):
     """convert integer to currency string"""
@@ -250,7 +250,7 @@ def v(kv,k):
     """return the value of key or empty string"""
     try:
         return kv[k]
-    except:
+    except KeyError:
         return ""
 
 def main(crs,err=None):
@@ -376,8 +376,8 @@ def acct(crs,qs,err=None):
     # get and check aid
     try:
         aid=q["aid"][0]
-    except KeyError:
-        raise ValueError("Wrong access")
+    except KeyError as e:
+        raise ValueError("Wrong access") from e
     crs.execute("SELECT COUNT(*) FROM accts WHERE aid=?",[aid])
     if res(crs)==0:
         raise ValueError("Bad aid")
@@ -389,8 +389,8 @@ def acct(crs,qs,err=None):
     try:
         page=int(q["page"][0])
         if page<1 or page>lastpage:
-            raise
-    except:
+            raise ValueError
+    except Exception:
         page=1
     # get commonly used account properties
     crs.execute("SELECT name,cdt FROM accts WHERE aid=?",[aid])
@@ -609,20 +609,20 @@ def ins_xact(crs,environ):
         aid=q["aid"][0]
         oaid=q["oaid"][0]
         comment=escape(q["comment"][0])
-    except KeyError:
-        raise ValueError("Wrong access")
+    except KeyError as e:
+        raise ValueError("Wrong access") from e
     # check accounts
     try:
         aid=int(aid)
-    except ValueError:
-        raise ValueError("Bad aid")
+    except ValueError as e:
+        raise ValueError("Bad aid") from e
     crs.execute("SELECT COUNT(aid) FROM accts WHERE aid=? AND cdt=0",[aid])
     if res(crs)==0:
         raise ValueError("Non-existent aid")
     try:
         oaid=int(oaid)
-    except ValueError:
-        raise ValueError("Bad oaid")
+    except ValueError as e:
+        raise ValueError("Bad oaid") from e
     crs.execute("SELECT COUNT(aid) FROM accts WHERE aid=? AND cdt=0",[oaid])
     if res(crs)==0 and oaid!=-1:
         raise ValueError("Non-existent oaid")
@@ -635,21 +635,21 @@ def ins_xact(crs,environ):
         # check date
         try:
             dt=date(int(yyyy),int(mm),int(dd)).toordinal()
-        except ValueError:
-            raise BadInput("Bad date")
+        except ValueError as e:
+            raise BadInput("Bad date") from e
         # check transaction values
         if dr=="":
             dr="0"
         try:
             dr=cur2int(arith(dr))
-        except ValueError:
-            raise BadInput("Bad Dr")
+        except ValueError as e:
+            raise BadInput("Bad Dr") from e
         if cr=="":
             cr="0"
         try:
             cr=cur2int(arith(cr))
-        except ValueError:
-            raise BadInput("Bad Cr")
+        except ValueError as e:
+            raise BadInput("Bad Cr") from e
         if dr<0:
             raise BadInput("Dr cannot be negative")
         if cr<0:
@@ -663,8 +663,8 @@ def ins_xact(crs,environ):
                 raise BadInput("Set one of Dr, Cr, or Balance")
             try:
                 newbal=cur2int(arith(newbal))
-            except ValueError:
-                raise BadInput("Bad Balance")
+            except ValueError as e:
+                raise BadInput("Bad Balance") from e
         # check dates
         if dt>date.today().toordinal():
             raise BadInput("Date cannot be in the future")
@@ -742,8 +742,8 @@ def del_xact(crs,environ):
     try:
         xid=q["xid"][0]
         aid=q["aid"][0]
-    except KeyError:
-        raise ValueError("Wrong access")
+    except KeyError as e:
+        raise ValueError("Wrong access") from e
     # check accounts
     crs.execute("SELECT COUNT(aid) FROM accts WHERE aid=? AND cdt=0",[aid])
     if res(crs)==0:
@@ -775,8 +775,8 @@ def creat_acct(crs,environ):
     try:
         atype=q["atype"][0]
         aname=escape(q["aname"][0])
-    except KeyError:
-        raise ValueError("Wrong access")
+    except KeyError as e:
+        raise ValueError("Wrong access") from e
     # check argument
     if not atype in [x for x,_ in atypes]+[""]:
         raise ValueError("Wrong account type")
@@ -813,8 +813,8 @@ def close_acct(crs,environ):
     q=parse_qs(qs)
     try:
         aid=q["aid"][0]
-    except KeyError:
-        raise ValueError("Wrong access")
+    except KeyError as e:
+        raise ValueError("Wrong access") from e
     # check argument
     crs.execute("SELECT COUNT(*) FROM accts WHERE aid=?",[aid])
     if res(crs)==0:
