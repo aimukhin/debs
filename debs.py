@@ -6,6 +6,7 @@ MIT License
 
 thousand_sep=" "
 decimal_sep=","
+limit=100
 
 style="""
 div.center { text-align: center; }
@@ -44,6 +45,7 @@ try:
 	from pysqlcipher3 import dbapi2 as sqlite3
 except:
 	import sqlite3
+from math import ceil
 
 # database key
 dbkey=None
@@ -373,7 +375,7 @@ def acct(crs,qs,err=None):
 	"""show account statement page"""
 	# get arguments
 	q=parse_qs(qs,keep_blank_values=True)
-	# check the mandatory argument
+	# get and check aid
 	try:
 		aid=q["aid"][0]
 	except KeyError:
@@ -381,6 +383,17 @@ def acct(crs,qs,err=None):
 	crs.execute("SELECT COUNT(*) FROM accts WHERE aid=?",[aid])
 	if res(crs)==0:
 		raise ValueError("Bad aid")
+	# get and check the page number
+	crs.execute("SELECT COUNT(*) FROM xacts WHERE aid=?",[aid])
+	lastpage=ceil(res(crs)/limit)
+	if lastpage==0:
+		lastpage=1
+	try:
+		page=int(q["page"][0])
+		if page<1 or page>lastpage:
+			raise
+	except:
+		page=1
 	# get commonly used account properties
 	crs.execute("SELECT name,odt,cdt FROM accts WHERE aid=?",[aid])
 	aname,odt,cdt=crs.fetchone()
@@ -501,7 +514,7 @@ def acct(crs,qs,err=None):
 	# past transactions
 	prev_year=None
 	prev_month=None
-	crs.execute("SELECT * FROM xacts WHERE aid=? ORDER BY xid DESC",[aid])
+	crs.execute("SELECT * FROM xacts WHERE aid=? ORDER BY xid DESC LIMIT ? OFFSET ?",[aid,limit,(page-1)*limit])
 	for (xid,dt,aid,oaid,dr,cr,x_bal,comment) in crs.fetchall():
 		dt_d=date.fromordinal(dt)
 		dr=int2cur(int(dr)) if dr!="0" else ""
@@ -548,6 +561,20 @@ def acct(crs,qs,err=None):
 	r+="""
 	</table>
 	"""
+	# links to pages
+	r+="""
+	<hr>
+	Page
+	"""
+	for p in range(1,lastpage+1):
+		if p!=page:
+			r+="""
+			<a href="acct?aid={}&amp;page={}">{}</a>&nbsp;
+			""".format(aid,p,p)
+		else:
+			r+="""
+			{}&nbsp;
+			""".format(p)
 	# close the account
 	if bal==0 and cdt==0:
 		r+="""
