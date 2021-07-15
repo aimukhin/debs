@@ -567,8 +567,8 @@ def acct(crs,qs,err=None):
     for p in range(1,lastpage+1):
         if p!=page:
             r+="""
-            <a href="acct?aid={}&amp;page={}">{}</a>&nbsp;
-            """.format(aid,p,p)
+            <a href="acct?aid={0}&amp;page={1}">{1}</a>&nbsp;
+            """.format(aid,p)
         else:
             r+="""
             {}&nbsp;
