@@ -4,6 +4,17 @@ Copyright (c) 2020 Alexander Mukhin
 MIT License
 """
 
+from urllib.parse import parse_qs
+from datetime import date
+from html import escape
+import os
+import sys
+try:
+    from pysqlcipher3 import dbapi2 as sqlite3
+except:
+    import sqlite3
+from math import ceil
+
 thousand_sep=" "
 decimal_sep=","
 limit=100
@@ -35,17 +46,6 @@ tr.sep_month td { border-top: 2px solid #c0c0c0; }
 tr.sep_year td { border-top: 2px solid #808080; }
 tr.sep_tot td { border-top: 2px solid #c0c0c0; }
 """
-
-from urllib.parse import parse_qs,quote_plus,urlencode
-from datetime import date
-from html import escape
-import os
-import sys
-try:
-    from pysqlcipher3 import dbapi2 as sqlite3
-except:
-    import sqlite3
-from math import ceil
 
 # database key
 dbkey=None
