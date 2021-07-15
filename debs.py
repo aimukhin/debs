@@ -166,7 +166,7 @@ def get_dbkey(environ):
         k=q["dbkey"][0]
         # sanitize: drop everything except hexadecimal digits
         return ''.join(filter(lambda x: x in "0123456789abcdefABCDEF",k))
-    except Exception:
+    except KeyError:
         return None
 
 def valid_dbkey(crs,key):
@@ -248,7 +248,7 @@ def v(kv,k):
     """return the value of key or empty string"""
     try:
         return kv[k]
-    except KeyError:
+    except (TypeError,KeyError):
         return ""
 
 def main(crs,err=None):
@@ -388,7 +388,7 @@ def acct(crs,qs,err=None):
         page=int(q["page"][0])
         if page<1 or page>lastpage:
             raise ValueError
-    except Exception:
+    except (KeyError,ValueError):
         page=1
     # get commonly used account properties
     crs.execute("SELECT name,cdt FROM accts WHERE aid=?",[aid])
@@ -795,9 +795,6 @@ def creat_acct(crs,environ):
         err["aname"]=aname
         # return
         return main(crs,err)
-    except:
-        # re-raise other exceptions
-        raise
     # create account
     odt=date.today().toordinal()
     crs.execute("INSERT INTO accts VALUES (NULL,?,?,?,0)",[atype,aname,odt])
