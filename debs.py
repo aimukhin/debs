@@ -234,17 +234,15 @@ def balance(crs,aid):
     if maxxid is not None:
         crs.execute("SELECT bal FROM xacts WHERE xid=? and aid=?",[maxxid,aid])
         return int(res(crs))
-    else:
-        return 0
+    return 0
 
 def new_balance(atype,bal,dr,cr):
     """compute the new balance after transaction"""
     if atype in ("E","L","i"):
         return bal+cr-dr
-    elif atype in ("A","e"):
+    if atype in ("A","e"):
         return bal+dr-cr
-    else:
-        raise ValueError("Bad account type")
+    raise ValueError("Bad account type")
 
 def v(kv,k):
     """return the value of key or empty string"""
