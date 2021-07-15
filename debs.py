@@ -393,26 +393,6 @@ def acct(crs,qs,err=None):
 	maxxid=res(crs)
 	if maxxid is None:
 		maxxid=0
-	# find the statement period
-	try:
-		# try to get the statement period from the arguments
-		sy=int(q["syyyy"][0])
-		sm=int(q["smm"][0])
-		sd=int(q["sdd"][0])
-		sdt=date(sy,sm,sd).toordinal()
-		ey=int(q["eyyyy"][0])
-		em=int(q["emm"][0])
-		ed=int(q["edd"][0])
-		edt=date(ey,em,ed).toordinal()
-		if sdt>edt:
-			raise Exception
-	except:
-		# if fails, revert to the whole account's lifetime
-		sdt=odt
-		if cdt==0:
-			edt=date.today().toordinal()
-		else:
-			edt=cdt
 	# header
 	r="""
 	<!DOCTYPE html>
@@ -436,51 +416,15 @@ def acct(crs,qs,err=None):
 	<title>Double-entry Bookkeeping System</title>
 	</head>
 	"""
-	# basic statement info: start and end balances, and turnovers
-	sb=eb=tdr=tcr=0
-	crs.execute("SELECT dt,dr,cr,bal FROM xacts WHERE aid=? ORDER BY xid ASC",[aid])
-	for (dt,dr,cr,b) in crs.fetchall():
-		if dt<sdt:
-			sb=int(b)
-		else:
-			if dt<=edt:
-				tdr+=int(dr)
-				tcr+=int(cr)
-				eb=int(b)
-			else:
-				break
-	sdt_d=date.fromordinal(sdt)
-	edt_d=date.fromordinal(edt)
 	# body
 	r+="""
 	<body>
 	<div class=center>
-	<form action=acct method=get>
-	<input type=hidden name=aid value="{}">
 	<h2>{}</h2>
-	<h3>Account statement</h3> for the period from
-	<input type=text name=syyyy size=4 maxlength=4 class=w4 value="{}">
-	<input type=text name=smm size=2 maxlength=2 class=w2 value="{}">
-	<input type=text name=sdd size=2 maxlength=2 class=w2 value="{}">
-	to
-	<input type=text name=eyyyy size=4 maxlength=4 class=w4 value="{}">
-	<input type=text name=emm size=2 maxlength=2 class=w2 value="{}">
-	<input type=text name=edd size=2 maxlength=2 class=w2 value="{}">
-	<input type=submit value=Update>
-	</form>
 	</div>
-	""".format(aid,aname,sdt_d.year,sdt_d.month,sdt_d.day,edt_d.year,edt_d.month,edt_d.day)
-	r+="""
-	<table class=center>
-	<tr><td colspan=3>&nbsp;</td></tr>
-	<tr><td>Starting balance</td><td>&nbsp;</td><td class=r>{}</td></tr>
-	<tr><td>Debit turnovers</td><td>&nbsp;</td><td class=r>{}</td></tr>
-	<tr><td>Credit turnovers</td><td>&nbsp;</td><td class=r>{}</td></tr>
-	<tr><td>Ending balance</td><td>&nbsp;</td><td class=r>{}</td></tr>
-	</table>
 	<a href=".">Back to list</a>
 	<hr>
-	""".format(int2cur(sb),int2cur(tdr),int2cur(tcr),int2cur(eb))
+	""".format(aname)
 	# transactions
 	r+="""
 	<table class=full>
@@ -494,7 +438,7 @@ def acct(crs,qs,err=None):
 	</tr>
 	"""
 	# new transaction
-	if cdt==0 and maxdt<=edt:
+	if cdt==0:
 		d=date.today()
 		yyyy=d.year if err is None else err["yyyy"]
 		mm=d.month if err is None else err["mm"]
@@ -557,7 +501,7 @@ def acct(crs,qs,err=None):
 	# past transactions
 	prev_year=None
 	prev_month=None
-	crs.execute("SELECT * FROM xacts WHERE aid=? AND ?<=dt AND dt<=? ORDER BY xid DESC",[aid,sdt,edt])
+	crs.execute("SELECT * FROM xacts WHERE aid=? ORDER BY xid DESC",[aid])
 	for (xid,dt,aid,oaid,dr,cr,x_bal,comment) in crs.fetchall():
 		dt_d=date.fromordinal(dt)
 		dr=int2cur(int(dr)) if dr!="0" else ""
