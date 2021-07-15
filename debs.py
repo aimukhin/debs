@@ -510,7 +510,8 @@ def acct(crs,qs,err=None):
     # past transactions
     prev_year=None
     prev_month=None
-    crs.execute("SELECT * FROM xacts WHERE aid=? ORDER BY xid DESC LIMIT ? OFFSET ?",[aid,LIMIT,(page-1)*LIMIT])
+    crs.execute("SELECT * FROM xacts WHERE aid=? ORDER BY xid DESC LIMIT ? OFFSET ?",
+    [aid,LIMIT,(page-1)*LIMIT])
     for (xid,dt,aid,oaid,dr,cr,x_bal,comment) in crs.fetchall():
         dt_d=date.fromordinal(dt)
         dr=int2cur(int(dr)) if dr!="0" else ""
@@ -727,8 +728,10 @@ def ins_xact(crs,environ):
         xid=0
     else:
         xid=maxxid+1
-    crs.execute("INSERT INTO xacts VALUES(?,?,?,?,?,?,?,?)",[xid,dt,aid,oaid,str(dr),str(cr),str(newbal),comment])
-    crs.execute("INSERT INTO xacts VALUES(?,?,?,?,?,?,?,?)",[xid,dt,oaid,aid,str(cr),str(dr),str(onewbal),comment])
+    crs.execute("INSERT INTO xacts VALUES(?,?,?,?,?,?,?,?)",
+    [xid,dt,aid,oaid,str(dr),str(cr),str(newbal),comment])
+    crs.execute("INSERT INTO xacts VALUES(?,?,?,?,?,?,?,?)",
+    [xid,dt,oaid,aid,str(cr),str(dr),str(onewbal),comment])
     # return
     return acct(crs,"aid={}".format(aid))
 
