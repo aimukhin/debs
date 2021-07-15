@@ -244,7 +244,7 @@ def new_balance(atype,bal,dr,cr):
         return bal+dr-cr
     raise ValueError("Bad account type")
 
-def v(kv,k):
+def val(kv,k):
     """return the value of key or empty string"""
     try:
         return kv[k]
@@ -318,7 +318,7 @@ def main(crs,err=None):
     <option value="">&nbsp;</option>
     """
     for atc,atn in atypes:
-        sel="selected" if atc==v(err,"atype") else ""
+        sel="selected" if atc==val(err,"atype") else ""
         r+="""
         <option value="{}" {}>{}</option>
         """.format(atc,sel,atn)
@@ -327,7 +327,7 @@ def main(crs,err=None):
     <input type=text name=aname value="{}">
     <input type=submit value=Create>
     </form>
-    """.format(v(err,"aname"))
+    """.format(val(err,"aname"))
     # show error message
     if err is not None:
         r+="""
@@ -469,7 +469,7 @@ def acct(crs,qs,err=None):
         <input type=hidden name=aid value="{}">
         <select name=oaid>
         <option value="-1">&nbsp;</option>
-        """.format(yyyy,mm,dd,v(err,"dr"),v(err,"cr"),v(err,"newbal"),aid)
+        """.format(yyyy,mm,dd,val(err,"dr"),val(err,"cr"),val(err,"newbal"),aid)
         for atc,atn in atypes:
             r+="""
             <optgroup label="{}">
@@ -477,7 +477,7 @@ def acct(crs,qs,err=None):
             crs.execute("SELECT aid,name FROM accts WHERE type=? AND cdt=0 ORDER BY name",[atc])
             opts=crs.fetchall()
             for oaid,oaname in opts:
-                sel="selected" if oaid==v(err,"oaid") else ""
+                sel="selected" if oaid==val(err,"oaid") else ""
                 r+="""
                 <option value="{}" {}>{}</option>
                 """.format(oaid,sel,oaname)
@@ -499,7 +499,7 @@ def acct(crs,qs,err=None):
         </table>
         </form>
         </td></tr>
-        """.format(v(err,"comment"))
+        """.format(val(err,"comment"))
     # show error message
     if err is not None:
         r+="""
