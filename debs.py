@@ -11,15 +11,15 @@ import os
 import sys
 try:
     from pysqlcipher3 import dbapi2 as sqlite3
-except:
+except ImportError:
     import sqlite3
 from math import ceil
 
-thousand_sep=" "
-decimal_sep=","
-limit=100
+THOUSAND_SEP=" "
+DECIMAL_SEP=","
+LIMIT=100
 
-style="""
+STYLE="""
 div.center { text-align: center; }
 div.indent { margin-left: 5ch; }
 form.inline { display: inline; }
@@ -52,11 +52,9 @@ dbkey=None
 
 class BadInput(Exception):
     """invalid user input"""
-    pass
 
 class BadDBKey(Exception):
     """bad database key"""
-    pass
 
 def application(environ,start_response):
     """entry point"""
@@ -186,12 +184,12 @@ atypes=[("E","Equity"),("A","Assets"),("L","Liabilities"),("i","Income"),("e","E
 def cur2int(s):
     """convert currency string to integer"""
     s=s.replace(" ","") # drop spaces
-    s=s.replace(",",decimal_sep) # always accept "," as a decimal separator
-    s=s.replace(".",decimal_sep) # always accept "." as a decimal separator
+    s=s.replace(",",DECIMAL_SEP) # always accept "," as a decimal separator
+    s=s.replace(".",DECIMAL_SEP) # always accept "." as a decimal separator
     r=""
     i=0
     for i,c in enumerate(s):
-        if c is decimal_sep:
+        if c is DECIMAL_SEP:
             break
         r=r+c
     return int(r+s[i+1:i+3].ljust(2,"0"))
@@ -201,7 +199,7 @@ def arith(s):
     try:
         # normalize string
         s=s.replace(" ","") # drop spaces
-        s=s.replace(decimal_sep,".") # use . as decimal point
+        s=s.replace(DECIMAL_SEP,".") # use . as decimal point
         # check that string contains only numbers, operators, and brackets
         for c in s:
             if not c in "0123456789.+-*/()":
@@ -217,9 +215,9 @@ def int2cur(v):
     r=""
     for i,c in enumerate(s[::-1].ljust(3,"0"),1):
         if i==3:
-            r=decimal_sep+r
+            r=DECIMAL_SEP+r
         elif i%3==0:
-            r=thousand_sep+r
+            r=THOUSAND_SEP+r
         r=c+r
     if v<0:
         r="&minus;"+r
@@ -269,7 +267,7 @@ def main(crs,err=None):
     </style>
     <title>Double-entry Bookkeeping System</title>
     </head>
-    """.format(style)
+    """.format(STYLE)
     # body
     r+="""
     <body>
@@ -385,7 +383,7 @@ def acct(crs,qs,err=None):
         raise ValueError("Bad aid")
     # get and check the page number
     crs.execute("SELECT COUNT(*) FROM xacts WHERE aid=?",[aid])
-    lastpage=ceil(res(crs)/limit)
+    lastpage=ceil(res(crs)/LIMIT)
     if lastpage==0:
         lastpage=1
     try:
@@ -416,7 +414,7 @@ def acct(crs,qs,err=None):
     <style>
     {}
     </style>
-    """.format(style)
+    """.format(STYLE)
     r+="""
     <script>
     function confirmCloseAccount(what) {
@@ -514,7 +512,7 @@ def acct(crs,qs,err=None):
     # past transactions
     prev_year=None
     prev_month=None
-    crs.execute("SELECT * FROM xacts WHERE aid=? ORDER BY xid DESC LIMIT ? OFFSET ?",[aid,limit,(page-1)*limit])
+    crs.execute("SELECT * FROM xacts WHERE aid=? ORDER BY xid DESC LIMIT ? OFFSET ?",[aid,LIMIT,(page-1)*LIMIT])
     for (xid,dt,aid,oaid,dr,cr,x_bal,comment) in crs.fetchall():
         dt_d=date.fromordinal(dt)
         dr=int2cur(int(dr)) if dr!="0" else ""
