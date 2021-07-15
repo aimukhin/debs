@@ -175,7 +175,7 @@ def valid_dbkey(crs,key):
         if key is not None:
             crs.execute("PRAGMA key=\"x'{}'\"".format(key))
         crs.execute("SELECT COUNT(*) FROM sqlite_master")
-    except sqlite3.Error as e:
+    except sqlite3.Error:
         return False
     return True
 
@@ -393,8 +393,8 @@ def acct(crs,qs,err=None):
     except:
         page=1
     # get commonly used account properties
-    crs.execute("SELECT name,odt,cdt FROM accts WHERE aid=?",[aid])
-    aname,odt,cdt=crs.fetchone()
+    crs.execute("SELECT name,cdt FROM accts WHERE aid=?",[aid])
+    aname,cdt=crs.fetchone()
     bal=balance(crs,aid)
     crs.execute("SELECT MAX(dt) FROM xacts WHERE aid=?",[aid])
     maxdt=res(crs)
