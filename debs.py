@@ -129,6 +129,10 @@ def application(environ,start_response):
         c="400 Bad Request"
         r="Parameter expected: {}".format(e)
         h=[("Content-type","text/plain")]
+    except BadInput as e:
+        c="400 Bad Request"
+        r="Error: {}".format(e)
+        h=[("Content-type","text/plain")]
     except BadDBKey:
         pass
     if cnx:
@@ -615,75 +619,58 @@ def ins_xact(crs,environ):
     crs.execute("SELECT COUNT(aid) FROM accts WHERE aid=? AND cdt=0",[oaid])
     if res(crs)==0 and oaid!=-1:
         raise ValueError("Non-existent oaid")
-    # validate user input
+    if oaid==-1:
+        raise BadInput("Please select the opposing account")
+    if aid==oaid:
+        raise BadInput("Transaction with the same account")
+    # check date
     try:
-        if oaid==-1:
-            raise BadInput("Please select the opposing account")
-        if aid==oaid:
-            raise BadInput("Transaction with the same account")
-        # check date
+        dt=date(int(yyyy),int(mm),int(dd)).toordinal()
+    except ValueError as e:
+        raise BadInput("Bad date") from e
+    # check transaction values
+    if dr=="":
+        dr="0"
+    try:
+        dr=cur2int(arith(dr))
+    except ValueError as e:
+        raise BadInput("Bad Dr") from e
+    if cr=="":
+        cr="0"
+    try:
+        cr=cur2int(arith(cr))
+    except ValueError as e:
+        raise BadInput("Bad Cr") from e
+    if dr<0:
+        raise BadInput("Dr cannot be negative")
+    if cr<0:
+        raise BadInput("Cr cannot be negative")
+    if dr!=0 and cr!=0:
+        raise BadInput("Dr and Cr cannot both be set")
+    if (dr!=0 or cr!=0) and newbal!="":
+        raise BadInput("Dr or Cr and Balance cannot all be set")
+    if dr==0 and cr==0:
+        if newbal=="":
+            raise BadInput("Set one of Dr, Cr, or Balance")
         try:
-            dt=date(int(yyyy),int(mm),int(dd)).toordinal()
+            newbal=cur2int(arith(newbal))
         except ValueError as e:
-            raise BadInput("Bad date") from e
-        # check transaction values
-        if dr=="":
-            dr="0"
-        try:
-            dr=cur2int(arith(dr))
-        except ValueError as e:
-            raise BadInput("Bad Dr") from e
-        if cr=="":
-            cr="0"
-        try:
-            cr=cur2int(arith(cr))
-        except ValueError as e:
-            raise BadInput("Bad Cr") from e
-        if dr<0:
-            raise BadInput("Dr cannot be negative")
-        if cr<0:
-            raise BadInput("Cr cannot be negative")
-        if dr!=0 and cr!=0:
-            raise BadInput("Dr and Cr cannot both be set")
-        if (dr!=0 or cr!=0) and newbal!="":
-            raise BadInput("Dr or Cr and Balance cannot all be set")
-        if dr==0 and cr==0:
-            if newbal=="":
-                raise BadInput("Set one of Dr, Cr, or Balance")
-            try:
-                newbal=cur2int(arith(newbal))
-            except ValueError as e:
-                raise BadInput("Bad Balance") from e
-        # check dates
-        if dt>date.today().toordinal():
-            raise BadInput("Date cannot be in the future")
-        crs.execute("SELECT odt FROM accts WHERE aid=?",[aid])
-        if dt<res(crs):
-            raise BadInput("Date before the account's opening date")
-        crs.execute("SELECT odt FROM accts WHERE aid=?",[oaid])
-        if dt<res(crs):
-            raise BadInput("Date before the opposing account's opening date")
-        crs.execute("SELECT COUNT(*) FROM xacts WHERE aid=? AND dt>?",[aid,dt])
-        if res(crs)!=0:
-            raise BadInput("Current account has newer transactions")
-        crs.execute("SELECT COUNT(*) FROM xacts WHERE aid=? AND dt>?",[oaid,dt])
-        if res(crs)!=0:
-            raise BadInput("Opposing account has newer transactions")
-    except BadInput as e:
-        # fill error data
-        err=dict()
-        err["msg"]=str(e)
-        err["yyyy"]=q["yyyy"][0]
-        err["mm"]=q["mm"][0]
-        err["dd"]=q["dd"][0]
-        err["dr"]=q["dr"][0]
-        err["cr"]=q["cr"][0]
-        err["newbal"]=q["newbal"][0]
-        err["aid"]=q["aid"][0]
-        err["oaid"]=int(q["oaid"][0])
-        err["comment"]=escape(q["comment"][0])
-        # return
-        return acct(crs,"aid={}".format(aid),err)
+            raise BadInput("Bad Balance") from e
+    # check dates
+    if dt>date.today().toordinal():
+        raise BadInput("Date cannot be in the future")
+    crs.execute("SELECT odt FROM accts WHERE aid=?",[aid])
+    if dt<res(crs):
+        raise BadInput("Date before the account's opening date")
+    crs.execute("SELECT odt FROM accts WHERE aid=?",[oaid])
+    if dt<res(crs):
+        raise BadInput("Date before the opposing account's opening date")
+    crs.execute("SELECT COUNT(*) FROM xacts WHERE aid=? AND dt>?",[aid,dt])
+    if res(crs)!=0:
+        raise BadInput("Current account has newer transactions")
+    crs.execute("SELECT COUNT(*) FROM xacts WHERE aid=? AND dt>?",[oaid,dt])
+    if res(crs)!=0:
+        raise BadInput("Opposing account has newer transactions")
     # input data OK, prepare to insert transaction
     # get account types
     crs.execute("SELECT type FROM accts WHERE aid=?",[aid])
@@ -722,8 +709,8 @@ def ins_xact(crs,environ):
     [xid,dt,aid,oaid,str(dr),str(cr),str(newbal),comment])
     crs.execute("INSERT INTO xacts VALUES(?,?,?,?,?,?,?,?)",
     [xid,dt,oaid,aid,str(cr),str(dr),str(onewbal),comment])
-    # return
-    return acct(crs,"aid={}".format(aid))
+    # return redirect
+    return "303 See Other","",[("Location","acct?aid={}".format(aid))]
 
 def del_xact(crs,environ):
     """delete transaction"""
@@ -755,8 +742,8 @@ def del_xact(crs,environ):
         raise ValueError("Opposing account has newer transactions")
     # delete transaction
     crs.execute("DELETE FROM xacts WHERE xid=?",[xid])
-    # return
-    return acct(crs,"aid={}".format(aid))
+    # return redirect
+    return "303 See Other","",[("Location","acct?aid={}".format(aid))]
 
 def creat_acct(crs,environ):
     """create a new account"""
@@ -772,27 +759,18 @@ def creat_acct(crs,environ):
     if not atype in [x for x,_ in ATYPES]+[""]:
         raise ValueError("Wrong account type")
     # validate user input
-    try:
-        if atype=="":
-            raise BadInput("Please select the account type")
-        if aname=="":
-            raise BadInput("Please set the account name")
-        crs.execute("SELECT COUNT(*) FROM accts WHERE name=?",[aname])
-        if res(crs)!=0:
-            raise BadInput("Account with the same name already exists")
-    except BadInput as e:
-        # fill error data
-        err=dict()
-        err["msg"]=str(e)
-        err["atype"]=atype
-        err["aname"]=aname
-        # return
-        return main(crs,err)
+    if atype=="":
+        raise BadInput("Please select the account type")
+    if aname=="":
+        raise BadInput("Please set the account name")
+    crs.execute("SELECT COUNT(*) FROM accts WHERE name=?",[aname])
+    if res(crs)!=0:
+        raise BadInput("Account with the same name already exists")
     # create account
     odt=date.today().toordinal()
     crs.execute("INSERT INTO accts VALUES (NULL,?,?,?,0)",[atype,aname,odt])
-    # return
-    return main(crs)
+    # return redirect
+    return "303 See Other","",[("Location",".")]
 
 def close_acct(crs,environ):
     """close account"""
@@ -815,5 +793,5 @@ def close_acct(crs,environ):
     # close account
     now=date.today().toordinal()
     crs.execute("UPDATE accts SET cdt=? WHERE aid=?",[now,aid])
-    # return
-    return acct(crs,"aid={}".format(aid))
+    # return redirect
+    return "303 See Other","",[("Location","acct?aid={}".format(aid))]
