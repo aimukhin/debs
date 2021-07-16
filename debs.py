@@ -244,11 +244,13 @@ def new_balance(atype,bal,dr,cr):
         return bal+dr-cr
     raise ValueError("Bad account type")
 
-def val(kv,k):
+def maybe(kv,k):
     """return the value of key or empty string"""
+    if kv is None:
+        return ""
     try:
         return kv[k]
-    except (TypeError,KeyError):
+    except KeyError:
         return ""
 
 def main(crs,err=None):
@@ -318,7 +320,7 @@ def main(crs,err=None):
     <option value="">&nbsp;</option>
     """
     for atc,atn in atypes:
-        sel="selected" if atc==val(err,"atype") else ""
+        sel="selected" if atc==maybe(err,"atype") else ""
         r+="""
         <option value="{}" {}>{}</option>
         """.format(atc,sel,atn)
@@ -327,7 +329,7 @@ def main(crs,err=None):
     <input type=text name=aname value="{}">
     <input type=submit value=Create>
     </form>
-    """.format(val(err,"aname"))
+    """.format(maybe(err,"aname"))
     # show error message
     if err is not None:
         r+="""
@@ -469,7 +471,7 @@ def acct(crs,qs,err=None):
         <input type=hidden name=aid value="{}">
         <select name=oaid>
         <option value="-1">&nbsp;</option>
-        """.format(yyyy,mm,dd,val(err,"dr"),val(err,"cr"),val(err,"newbal"),aid)
+        """.format(yyyy,mm,dd,maybe(err,"dr"),maybe(err,"cr"),maybe(err,"newbal"),aid)
         for atc,atn in atypes:
             r+="""
             <optgroup label="{}">
@@ -477,7 +479,7 @@ def acct(crs,qs,err=None):
             crs.execute("SELECT aid,name FROM accts WHERE type=? AND cdt=0 ORDER BY name",[atc])
             opts=crs.fetchall()
             for oaid,oaname in opts:
-                sel="selected" if oaid==val(err,"oaid") else ""
+                sel="selected" if oaid==maybe(err,"oaid") else ""
                 r+="""
                 <option value="{}" {}>{}</option>
                 """.format(oaid,sel,oaname)
@@ -499,7 +501,7 @@ def acct(crs,qs,err=None):
         </table>
         </form>
         </td></tr>
-        """.format(val(err,"comment"))
+        """.format(maybe(err,"comment"))
     # show error message
     if err is not None:
         r+="""
