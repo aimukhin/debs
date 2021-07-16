@@ -18,7 +18,7 @@ from math import ceil
 THOUSAND_SEP=" "
 DECIMAL_SEP=","
 LIMIT=100
-
+ATYPES=[("E","Equity"),("A","Assets"),("L","Liabilities"),("i","Income"),("e","Expenses")]
 STYLE="""
 div.center { text-align: center; }
 div.indent { margin-left: 5ch; }
@@ -179,8 +179,6 @@ def valid_dbkey(crs,key):
         return False
     return True
 
-atypes=[("E","Equity"),("A","Assets"),("L","Liabilities"),("i","Income"),("e","Expenses")]
-
 def cur2int(s):
     """convert currency string to integer"""
     s=s.replace(" ","") # drop spaces
@@ -274,7 +272,7 @@ def main(crs,err=None):
     """
     # accounts
     totals={}
-    for atc,atn in atypes:
+    for atc,atn in ATYPES:
         r+="""
         <strong>{}</strong>
         <div class=indent>
@@ -319,7 +317,7 @@ def main(crs,err=None):
     <select name=atype>
     <option value="">&nbsp;</option>
     """
-    for atc,atn in atypes:
+    for atc,atn in ATYPES:
         sel="selected" if atc==maybe(err,"atype") else ""
         r+="""
         <option value="{}" {}>{}</option>
@@ -340,7 +338,7 @@ def main(crs,err=None):
     <hr>
     <h3>Closed accounts</h3>
     """
-    for atc,atn in atypes:
+    for atc,atn in ATYPES:
         r+="""
         <strong>{}</strong>
         <div class=indent>
@@ -472,7 +470,7 @@ def acct(crs,qs,err=None):
         <select name=oaid>
         <option value="-1">&nbsp;</option>
         """.format(yyyy,mm,dd,maybe(err,"dr"),maybe(err,"cr"),maybe(err,"newbal"),aid)
-        for atc,atn in atypes:
+        for atc,atn in ATYPES:
             r+="""
             <optgroup label="{}">
             """.format(atn)
@@ -781,7 +779,7 @@ def creat_acct(crs,environ):
     except KeyError as e:
         raise ValueError("Wrong access") from e
     # check argument
-    if not atype in [x for x,_ in atypes]+[""]:
+    if not atype in [x for x,_ in ATYPES]+[""]:
         raise ValueError("Wrong account type")
     # validate user input
     try:
