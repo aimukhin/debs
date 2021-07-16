@@ -28,7 +28,6 @@ input.w2 { width: 2ch; }
 input.w4 { width: 4ch; }
 input.w12 { width: 12ch; }
 span.atype { color: #c0c0c0; }
-span.err { color: red; }
 table { border-spacing: 0; }
 table td { padding: 2px; }
 table.center { margin: auto; }
@@ -246,16 +245,7 @@ def new_balance(atype,bal,dr,cr):
         return bal+dr-cr
     raise ValueError("Bad account type")
 
-def maybe(kv,k):
-    """return the value of key or empty string"""
-    if kv is None:
-        return ""
-    try:
-        return kv[k]
-    except KeyError:
-        return ""
-
-def main(crs,err=None):
+def main(crs):
     """show main page"""
     # header
     r="""
@@ -322,21 +312,15 @@ def main(crs,err=None):
     <option value="">&nbsp;</option>
     """
     for atc,atn in ATYPES:
-        sel="selected" if atc==maybe(err,"atype") else ""
         r+="""
-        <option value="{}" {}>{}</option>
-        """.format(atc,sel,atn)
+        <option value="{}">{}</option>
+        """.format(atc,atn)
     r+="""
     </select>
-    <input type=text name=aname value="{}">
+    <input type=text name=aname>
     <input type=submit value=Create>
     </form>
-    """.format(maybe(err,"aname"))
-    # show error message
-    if err is not None:
-        r+="""
-        <span class=err>{}</span>
-        """.format(err["msg"])
+    """
     # closed accounts
     r+="""
     <hr>
@@ -371,7 +355,7 @@ def main(crs,err=None):
     h=[("Content-type","text/html")]
     return c,r,h
 
-def acct(crs,qs,err=None):
+def acct(crs,qs):
     """show account statement page"""
     # get arguments
     q=parse_qs(qs,keep_blank_values=True)
@@ -443,9 +427,9 @@ def acct(crs,qs,err=None):
     # new transaction
     if cdt==0:
         d=date.today()
-        yyyy=d.year if err is None else err["yyyy"]
-        mm=d.month if err is None else err["mm"]
-        dd=d.day if err is None else err["dd"]
+        yyyy=d.year
+        mm=d.month
+        dd=d.day
         r+="""
         <tr class=line><td colspan=6>
         <form action=ins_xact method=post>
@@ -456,14 +440,14 @@ def acct(crs,qs,err=None):
         <input type=text name=mm size=2 maxlength=2 class=w2 value="{}">
         <input type=text name=dd size=2 maxlength=2 class=w2 value="{}">
         </td>
-        <td class=dr><input type=text size=12 class=w12 name=dr value="{}"></td>
-        <td class=cr><input type=text size=12 class=w12 name=cr value="{}"></td>
-        <td class=bal><input type=text size=12 class=w12 name=newbal value="{}"></td>
+        <td class=dr><input type=text size=12 class=w12 name=dr></td>
+        <td class=cr><input type=text size=12 class=w12 name=cr></td>
+        <td class=bal><input type=text size=12 class=w12 name=newbal></td>
         <td class=opp>
         <input type=hidden name=aid value="{}">
         <select name=oaid>
         <option value="-1">&nbsp;</option>
-        """.format(yyyy,mm,dd,maybe(err,"dr"),maybe(err,"cr"),maybe(err,"newbal"),aid)
+        """.format(yyyy,mm,dd,aid)
         for atc,atn in ATYPES:
             r+="""
             <optgroup label="{}">
@@ -471,10 +455,9 @@ def acct(crs,qs,err=None):
             crs.execute("SELECT aid,name FROM accts WHERE type=? AND cdt=0 ORDER BY name",[atc])
             opts=crs.fetchall()
             for oaid,oaname in opts:
-                sel="selected" if oaid==maybe(err,"oaid") else ""
                 r+="""
-                <option value="{}" {}>{}</option>
-                """.format(oaid,sel,oaname)
+                <option value="{}">{}</option>
+                """.format(oaid,oaname)
             if len(opts)==0:
                 r+="""
                 <option>&nbsp;</option>
@@ -486,21 +469,14 @@ def acct(crs,qs,err=None):
         </select>
         </td>
         <td class=comm>
-        <input type=text name=comment size=20 class=comm maxlength=255 value="{}">
+        <input type=text name=comment size=20 class=comm maxlength=255>
         <input type=submit value=Insert>
         </td>
         </tr>
         </table>
         </form>
         </td></tr>
-        """.format(maybe(err,"comment"))
-    # show error message
-    if err is not None:
-        r+="""
-        <tr class=line><td colspan=6>
-        <div class=center><span class=err>{}</span></div>
-        </td></tr>
-        """.format(err["msg"])
+        """
     # past transactions
     prev_year=None
     prev_month=None
