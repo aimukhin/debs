@@ -412,19 +412,9 @@ def acct(crs,qs,err=None):
     <style>
     {}
     </style>
-    """.format(STYLE)
-    r+="""
-    <script>
-    function confirmCloseAccount(what) {
-    return confirm("Are you sure to close account "+what+"?");
-    }
-    function confirmDeleteTransaction() {
-    return confirm("Are you sure to delete this transaction?");
-    }
-    </script>
     <title>Double-entry Bookkeeping System</title>
     </head>
-    """
+    """.format(STYLE)
     # body
     r+="""
     <body>
@@ -548,7 +538,7 @@ def acct(crs,qs,err=None):
                 <form class=inline action=del_xact method=post>
                 <input type=hidden name=xid value="{}">
                 <input type=hidden name=aid value="{}">
-                <input type=submit value="Delete" onClick="return confirmDeleteTransaction()">
+                <input type=submit value="Delete">
                 </form>
                 """.format(xid,aid)
         r+="""
@@ -579,10 +569,10 @@ def acct(crs,qs,err=None):
         <div class="center form">
         <form action=close_acct method=post>
         <input type=hidden name=aid value="{}">
-        <input type=submit value="Close account" onClick="return confirmCloseAccount(\'{}\')">
+        <input type=submit value="Close account">
         </form>
         </div>
-        """.format(aid,aname)
+        """.format(aid)
     # cellar
     r+="""
     </body>
