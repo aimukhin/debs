@@ -47,9 +47,6 @@ tr.sep_year td { border-top: 2px solid #808080; }
 tr.sep_tot td { border-top: 2px solid #c0c0c0; }
 """
 
-# database key
-dbkey=None
-
 # a named tuple for storing HTML response components
 HTMLResponse=namedtuple("HTMLResponse",["status","headers","body"])
 
@@ -61,8 +58,6 @@ class BadDBKey(Exception):
 
 def application(environ,start_response):
     """entry point"""
-    # global database key
-    global dbkey
     try:
         # connect to the database
         cnx=None
@@ -88,17 +83,17 @@ def application(environ,start_response):
                 raise BadDBKey
             if p=="/set_dbkey":
                 # set global database key
-                dbkey=get_dbkey(environ)
+                application.dbkey=get_dbkey(environ)
                 # try to show the main page with the new key
                 r=HTMLResponse("303 See Other",[("Location",".")],"")
                 raise BadDBKey
             if p=="/clr_dbkey":
                 # clear database key
-                dbkey=None
+                application.dbkey=None
                 # redirect to ask key
                 r=HTMLResponse("303 See Other",[("Location","ask_dbkey")],"")
                 raise BadDBKey
-            if not valid_dbkey(crs,dbkey):
+            if not valid_dbkey(crs,application.dbkey):
                 # key is bad, ask for key
                 r=HTMLResponse("303 See Other",[("Location","ask_dbkey")],"")
                 raise BadDBKey
@@ -134,6 +129,9 @@ def application(environ,start_response):
         cnx.close()
     start_response(r.status,r.headers+[("Cache-Control","max-age=0")])
     return [r.body.encode()]
+
+# database key
+application.dbkey=None
 
 def ask_dbkey():
     """ask for a database key"""
@@ -330,7 +328,7 @@ def main(crs):
         </div>
         """
     # show clear key link
-    if dbkey is not None:
+    if application.dbkey is not None:
         b+="""
         <hr>
         <a href="clr_dbkey">Close session</a>
