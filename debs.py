@@ -4,6 +4,7 @@ Copyright (c) 2021 Alexander Mukhin
 MIT License
 """
 
+from collections import namedtuple
 from urllib.parse import parse_qs
 from datetime import date
 from html import escape
@@ -49,11 +50,8 @@ tr.sep_tot td { border-top: 2px solid #c0c0c0; }
 # database key
 dbkey=None
 
-class HTMLResponse:
-    def __init__(self,status,headers,body):
-        self.status=status
-        self.headers=headers
-        self.body=body
+# a named tuple for storing HTML response components
+HTMLResponse=namedtuple("HTMLResponse",["status","headers","body"])
 
 class BadInput(Exception):
     """invalid user input"""
