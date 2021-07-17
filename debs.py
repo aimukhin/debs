@@ -139,7 +139,7 @@ def application(environ,start_response):
 
 def ask_dbkey():
     """ask for a database key"""
-    r="""
+    b="""
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -154,7 +154,7 @@ def ask_dbkey():
     </html>
     """
     # return success
-    return HTMLResponse("200 OK",[("Content-type","text/html")],r)
+    return HTMLResponse("200 OK",[("Content-type","text/html")],b)
 
 def get_dbkey(environ):
     """get a database key submitted in a POST query"""
@@ -243,7 +243,7 @@ def new_balance(atype,bal,dr,cr):
 def main(crs):
     """show main page"""
     # header
-    r="""
+    b="""
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -256,13 +256,13 @@ def main(crs):
     </head>
     """.format(STYLE)
     # body
-    r+="""
+    b+="""
     <body>
     """
     # accounts
     totals={}
     for atc,atn in ATYPES:
-        r+="""
+        b+="""
         <strong>{}</strong>
         <div class=indent>
         <table>
@@ -272,13 +272,13 @@ def main(crs):
         for (aid,name) in crs.fetchall():
             bal=balance(crs,aid)
             totals[atc]+=bal
-            r+="""
+            b+="""
             <tr>
             <td><a href="acct?aid={}">{}</a></td>
             <td class=r>&nbsp; {}</td>
             </tr>
             """.format(aid,name,int2cur(bal))
-        r+="""
+        b+="""
         <tr class=sep_tot>
         <td>Total</td>
         <td class=r>&nbsp; {}</td>
@@ -296,7 +296,7 @@ def main(crs):
     if d!=0:
         return HTMLResponse("500 Internal Server Error",[("Content-type","text/plain")],"Corrupted database")
     # new account
-    r+="""
+    b+="""
     <hr>
     <form action=creat_acct method=post>
     New account &nbsp;
@@ -304,46 +304,46 @@ def main(crs):
     <option value="">&nbsp;</option>
     """
     for atc,atn in ATYPES:
-        r+="""
+        b+="""
         <option value="{}">{}</option>
         """.format(atc,atn)
-    r+="""
+    b+="""
     </select>
     <input type=text name=aname>
     <input type=submit value=Create>
     </form>
     """
     # closed accounts
-    r+="""
+    b+="""
     <hr>
     <h3>Closed accounts</h3>
     """
     for atc,atn in ATYPES:
-        r+="""
+        b+="""
         <strong>{}</strong>
         <div class=indent>
         """.format(atn)
         crs.execute("SELECT aid,name FROM accts WHERE type=? AND cdt<>0 ORDER BY name",[atc])
         for aid,name in crs:
-            r+="""
+            b+="""
             <a href="acct?aid={}">{}</a><br>
             """.format(aid,name)
-        r+="""
+        b+="""
         </div>
         """
     # show clear key link
     if dbkey is not None:
-        r+="""
+        b+="""
         <hr>
         <a href="clr_dbkey">Close session</a>
         """
     # cellar
-    r+="""
+    b+="""
     </body>
     </html>
     """
     # return success
-    return HTMLResponse("200 OK",[("Content-type","text/html")],r)
+    return HTMLResponse("200 OK",[("Content-type","text/html")],b)
 
 def acct(crs,qs):
     """show account statement page"""
@@ -381,7 +381,7 @@ def acct(crs,qs):
     if maxxid is None:
         maxxid=0
     # header
-    r="""
+    b="""
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -394,7 +394,7 @@ def acct(crs,qs):
     </head>
     """.format(STYLE)
     # body
-    r+="""
+    b+="""
     <body>
     <div class=center>
     <h2>{}</h2>
@@ -403,7 +403,7 @@ def acct(crs,qs):
     <hr>
     """.format(aname)
     # transactions
-    r+="""
+    b+="""
     <table class=full>
     <tr class=line>
     <th class=date>Date</th>
@@ -420,7 +420,7 @@ def acct(crs,qs):
         yyyy=d.year
         mm=d.month
         dd=d.day
-        r+="""
+        b+="""
         <tr class=line><td colspan=6>
         <form action=ins_xact method=post>
         <table class=full>
@@ -439,23 +439,23 @@ def acct(crs,qs):
         <option value="-1">&nbsp;</option>
         """.format(yyyy,mm,dd,aid)
         for atc,atn in ATYPES:
-            r+="""
+            b+="""
             <optgroup label="{}">
             """.format(atn)
             crs.execute("SELECT aid,name FROM accts WHERE type=? AND cdt=0 ORDER BY name",[atc])
             opts=crs.fetchall()
             for oaid,oaname in opts:
-                r+="""
+                b+="""
                 <option value="{}">{}</option>
                 """.format(oaid,oaname)
             if len(opts)==0:
-                r+="""
+                b+="""
                 <option>&nbsp;</option>
                 """
-            r+="""
+            b+="""
             </optgroup>
             """
-        r+="""
+        b+="""
         </select>
         </td>
         <td class=comm>
@@ -491,7 +491,7 @@ def acct(crs,qs):
         prev_month=x_month
         crs.execute("SELECT type,name FROM accts WHERE aid=?",[oaid])
         oatype,oaname=crs.fetchone()
-        r+="""
+        b+="""
         <tr class="line {}">
         <td class=date>{}</td>
         <td class=dr>{}</td>
@@ -504,37 +504,37 @@ def acct(crs,qs):
         if xid==maxxid:
             crs.execute("SELECT MAX(xid) FROM xacts WHERE aid=?",[oaid])
             if xid==res(crs):
-                r+="""
+                b+="""
                 <form class=inline action=del_xact method=post>
                 <input type=hidden name=xid value="{}">
                 <input type=hidden name=aid value="{}">
                 <input type=submit value="Delete">
                 </form>
                 """.format(xid,aid)
-        r+="""
+        b+="""
         </td>
         </tr>
         """
-    r+="""
+    b+="""
     </table>
     """
     # links to pages
-    r+="""
+    b+="""
     <hr>
     Page
     """
     for p in range(1,lastpage+1):
         if p!=page:
-            r+="""
+            b+="""
             <a href="acct?aid={0}&amp;page={1}">{1}</a>&nbsp;
             """.format(aid,p)
         else:
-            r+="""
+            b+="""
             {}&nbsp;
             """.format(p)
     # close the account
     if bal==0 and cdt==0:
-        r+="""
+        b+="""
         <hr>
         <div class="center form">
         <form action=close_acct method=post>
@@ -544,12 +544,12 @@ def acct(crs,qs):
         </div>
         """.format(aid)
     # cellar
-    r+="""
+    b+="""
     </body>
     </html>
     """
     # return success
-    return HTMLResponse("200 OK",[("Content-type","text/html")],r)
+    return HTMLResponse("200 OK",[("Content-type","text/html")],b)
 
 def ins_xact(crs,environ):
     """insert a new transaction"""
