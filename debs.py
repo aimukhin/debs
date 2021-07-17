@@ -49,6 +49,12 @@ tr.sep_tot td { border-top: 2px solid #c0c0c0; }
 # database key
 dbkey=None
 
+class HTMLResponse:
+    def __init__(self,status,headers,body):
+        self.status=status
+        self.headers=headers
+        self.body=body
+
 class BadInput(Exception):
     """invalid user input"""
 
@@ -80,65 +86,56 @@ def application(environ,start_response):
         if "pysqlcipher3" in sys.modules:
             if p=="/ask_dbkey":
                 # ask for a database key
-                c,r,h=ask_dbkey()
+                r=ask_dbkey()
                 raise BadDBKey
             if p=="/set_dbkey":
                 # set global database key
                 dbkey=get_dbkey(environ)
                 # try to show the main page with the new key
-                c,r,h="303 See Other","",[("Location",".")]
+                r=HTMLResponse("303 See Other",[("Location",".")],"")
                 raise BadDBKey
             if p=="/clr_dbkey":
                 # clear database key
                 dbkey=None
                 # redirect to ask key
-                c,r,h="303 See Other","",[("Location","ask_dbkey")]
+                r=HTMLResponse("303 See Other",[("Location","ask_dbkey")],"")
                 raise BadDBKey
             if not valid_dbkey(crs,dbkey):
                 # key is bad, ask for key
-                c,r,h="303 See Other","",[("Location","ask_dbkey")]
+                r=HTMLResponse("303 See Other",[("Location","ask_dbkey")],"")
                 raise BadDBKey
         # main selector
         qs=environ.get("QUERY_STRING")
         crs.execute("BEGIN") # execute each request in a transaction
         with cnx:
             if p=="/":
-                c,r,h=main(crs)
+                r=main(crs)
             elif p=="/acct":
-                c,r,h=acct(crs,qs)
+                r=acct(crs,qs)
             elif p=="/ins_xact":
-                c,r,h=ins_xact(crs,environ)
+                r=ins_xact(crs,environ)
             elif p=="/del_xact":
-                c,r,h=del_xact(crs,environ)
+                r=del_xact(crs,environ)
             elif p=="/creat_acct":
-                c,r,h=creat_acct(crs,environ)
+                r=creat_acct(crs,environ)
             elif p=="/close_acct":
-                c,r,h=close_acct(crs,environ)
+                r=close_acct(crs,environ)
             else:
                 raise ValueError("Wrong access")
     except ValueError as e:
-        c="400 Bad Request"
-        r="{}".format(e)
-        h=[("Content-type","text/plain")]
+        r=HTMLResponse("400 Bad Request",[("Content-type","text/plain")],"{}".format(e))
     except sqlite3.Error as e:
-        c="500 Internal Server Error"
-        r="Database error: {}".format(e)
-        h=[("Content-type","text/plain")]
+        r=HTMLResponse("500 Internal Server Error",[("Content-type","text/plain")],"Database error: {}".format(e))
     except KeyError as e:
-        c="400 Bad Request"
-        r="Parameter expected: {}".format(e)
-        h=[("Content-type","text/plain")]
+        r=HTMLResponse("400 Bad Request",[("Content-type","text/plain")],"Parameter expected: {}".format(e))
     except BadInput as e:
-        c="400 Bad Request"
-        r="Error: {}".format(e)
-        h=[("Content-type","text/plain")]
+        r=HTMLResponse("400 Bad Request",[("Content-type","text/plain")],"Error: {}".format(e))
     except BadDBKey:
         pass
     if cnx:
         cnx.close()
-    h+=[("Cache-Control","max-age=0")]
-    start_response(c,h)
-    return [r.encode()]
+    start_response(r.status,r.headers+[("Cache-Control","max-age=0")])
+    return [r.body.encode()]
 
 def ask_dbkey():
     """ask for a database key"""
@@ -157,9 +154,7 @@ def ask_dbkey():
     </html>
     """
     # return success
-    c="200 OK"
-    h=[("Content-type","text/html")]
-    return c,r,h
+    return HTMLResponse("200 OK",[("Content-type","text/html")],r)
 
 def get_dbkey(environ):
     """get a database key submitted in a POST query"""
@@ -299,10 +294,7 @@ def main(crs):
     for atc in ("A","e"):
         d-=totals[atc]
     if d!=0:
-        c="500 Internal Server Error"
-        r="Inconsistent database: accounting equation doesn't hold"
-        h=[("Content-type","text/plain")]
-        return c,r,h
+        return HTMLResponse("500 Internal Server Error",[("Content-type","text/plain")],"Corrupted database")
     # new account
     r+="""
     <hr>
@@ -351,9 +343,7 @@ def main(crs):
     </html>
     """
     # return success
-    c="200 OK"
-    h=[("Content-type","text/html")]
-    return c,r,h
+    return HTMLResponse("200 OK",[("Content-type","text/html")],r)
 
 def acct(crs,qs):
     """show account statement page"""
@@ -559,9 +549,7 @@ def acct(crs,qs):
     </html>
     """
     # return success
-    c="200 OK"
-    h=[("Content-type","text/html")]
-    return c,r,h
+    return HTMLResponse("200 OK",[("Content-type","text/html")],r)
 
 def ins_xact(crs,environ):
     """insert a new transaction"""
@@ -686,7 +674,7 @@ def ins_xact(crs,environ):
     crs.execute("INSERT INTO xacts VALUES(?,?,?,?,?,?,?,?)",
     [xid,dt,oaid,aid,str(cr),str(dr),str(onewbal),comment])
     # return redirect
-    return "303 See Other","",[("Location","acct?aid={}".format(aid))]
+    return HTMLResponse("303 See Other",[("Location","acct?aid={}".format(aid))],"")
 
 def del_xact(crs,environ):
     """delete transaction"""
@@ -719,7 +707,7 @@ def del_xact(crs,environ):
     # delete transaction
     crs.execute("DELETE FROM xacts WHERE xid=?",[xid])
     # return redirect
-    return "303 See Other","",[("Location","acct?aid={}".format(aid))]
+    return HTMLResponse("303 See Other",[("Location","acct?aid={}".format(aid))],"")
 
 def creat_acct(crs,environ):
     """create a new account"""
@@ -746,7 +734,7 @@ def creat_acct(crs,environ):
     odt=date.today().toordinal()
     crs.execute("INSERT INTO accts VALUES (NULL,?,?,?,0)",[atype,aname,odt])
     # return redirect
-    return "303 See Other","",[("Location",".")]
+    return HTMLResponse("303 See Other",[("Location",".")],"")
 
 def close_acct(crs,environ):
     """close account"""
@@ -770,4 +758,4 @@ def close_acct(crs,environ):
     now=date.today().toordinal()
     crs.execute("UPDATE accts SET cdt=? WHERE aid=?",[now,aid])
     # return redirect
-    return "303 See Other","",[("Location","acct?aid={}".format(aid))]
+    return HTMLResponse("303 See Other",[("Location","acct?aid={}".format(aid))],"")
