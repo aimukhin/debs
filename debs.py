@@ -272,7 +272,7 @@ def main(crs):
     for atc in ("A","e"):
         d-=totals[atc]
     if d!=0:
-        return HTMLResponse("500 Internal Server Error",[("Content-type","text/plain")],"Corrupted database")
+        raise sqlite3.Error("accounting equation doesn't hold")
     # new account
     b+="""
     <hr>
