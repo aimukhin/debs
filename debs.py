@@ -64,9 +64,9 @@ def application(environ,start_response):
             # try request environment
             db=environ["DB"]
         else:
-            raise sqlite3.Error("no file given")
+            raise sqlite3.Error("No file given")
         if not os.path.exists(db):
-            raise sqlite3.Error("file does not exist")
+            raise sqlite3.Error("File does not exist")
         cnx=sqlite3.connect(db)
         cnx.isolation_level=None # we manage transactions explicitly
         crs=cnx.cursor()
@@ -99,10 +99,10 @@ def application(environ,start_response):
                 r=close_acct(crs,environ)
             else:
                 raise ValueError("Wrong access")
-    except ValueError as e:
-        r=HTMLResponse("400 Bad Request",[("Content-type","text/plain")],"{}".format(e))
     except sqlite3.Error as e:
         r=HTMLResponse("500 Internal Server Error",[("Content-type","text/plain")],"Database error: {}".format(e))
+    except ValueError as e:
+        r=HTMLResponse("400 Bad Request",[("Content-type","text/plain")],"{}".format(e))
     except KeyError as e:
         r=HTMLResponse("400 Bad Request",[("Content-type","text/plain")],"Parameter expected: {}".format(e))
     except BadInput as e:
@@ -272,7 +272,7 @@ def main(crs):
     for atc in ("A","e"):
         d-=totals[atc]
     if d!=0:
-        raise sqlite3.Error("accounting equation doesn't hold")
+        raise sqlite3.Error("Accounting equation doesn't hold")
     # new account
     b+="""
     <hr>
