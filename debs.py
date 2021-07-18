@@ -9,7 +9,6 @@ from urllib.parse import parse_qs
 from datetime import date
 from html import escape
 import os
-import sys
 try:
     from pysqlcipher3 import dbapi2 as sqlite3
 except ImportError:
@@ -53,9 +52,6 @@ HTMLResponse=namedtuple("HTMLResponse",["status","headers","body"])
 class BadInput(Exception):
     """invalid user input"""
 
-class BadDBKey(Exception):
-    """bad database key"""
-
 def application(environ,start_response):
     """entry point"""
     try:
@@ -74,34 +70,22 @@ def application(environ,start_response):
         cnx=sqlite3.connect(db)
         cnx.isolation_level=None # we manage transactions explicitly
         crs=cnx.cursor()
-        # deal with database key
         p=environ["PATH_INFO"]
-        if "pysqlcipher3" in sys.modules:
-            if p=="/ask_dbkey":
-                # ask for a database key
-                r=ask_dbkey()
-                raise BadDBKey
-            if p=="/set_dbkey":
-                # set global database key
-                application.dbkey=get_dbkey(environ)
-                # try to show the main page with the new key
-                r=HTMLResponse("303 See Other",[("Location",".")],"")
-                raise BadDBKey
-            if p=="/clr_dbkey":
-                # clear database key
-                application.dbkey=None
-                # redirect to ask key
-                r=HTMLResponse("303 See Other",[("Location","ask_dbkey")],"")
-                raise BadDBKey
-            if not valid_dbkey(crs,application.dbkey):
-                # key is bad, ask for key
-                r=HTMLResponse("303 See Other",[("Location","ask_dbkey")],"")
-                raise BadDBKey
-        # main selector
         qs=environ.get("QUERY_STRING")
         crs.execute("BEGIN") # execute each request in a transaction
+        # main selector
         with cnx:
-            if p=="/":
+            if p=="/ask_dbkey":
+                r=ask_dbkey()
+            elif p=="/set_dbkey":
+                application.dbkey=get_dbkey(environ)
+                r=HTMLResponse("303 See Other",[("Location",".")],"")
+            elif p=="/clr_dbkey":
+                application.dbkey=None
+                r=HTMLResponse("303 See Other",[("Location","ask_dbkey")],"")
+            elif not valid_dbkey(crs,application.dbkey):
+                r=HTMLResponse("303 See Other",[("Location","ask_dbkey")],"")
+            elif p=="/":
                 r=main(crs)
             elif p=="/acct":
                 r=acct(crs,qs)
@@ -123,8 +107,6 @@ def application(environ,start_response):
         r=HTMLResponse("400 Bad Request",[("Content-type","text/plain")],"Parameter expected: {}".format(e))
     except BadInput as e:
         r=HTMLResponse("400 Bad Request",[("Content-type","text/plain")],"Error: {}".format(e))
-    except BadDBKey:
-        pass
     if cnx:
         cnx.close()
     start_response(r.status,r.headers+[("Cache-Control","max-age=0")])
