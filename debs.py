@@ -70,10 +70,10 @@ def application(environ,start_response):
         cnx=sqlite3.connect(db)
         cnx.isolation_level=None # we manage transactions explicitly
         crs=cnx.cursor()
-        p=environ["PATH_INFO"]
-        qs=environ.get("QUERY_STRING")
         crs.execute("BEGIN") # execute each request in a transaction
         # main selector
+        p=environ["PATH_INFO"]
+        qs=environ.get("QUERY_STRING")
         with cnx:
             if p=="/ask_dbkey":
                 r=ask_dbkey()
