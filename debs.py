@@ -20,6 +20,7 @@ DECIMAL_SEP=","
 LIMIT=100
 ATYPES=[("E","Equity"),("A","Assets"),("L","Liabilities"),("i","Income"),("e","Expenses")]
 STYLE="""
+body { background-color: #fff1e5; }
 div.center { text-align: center; }
 div.indent { margin-left: 5ch; }
 form.inline { display: inline; }
@@ -27,7 +28,7 @@ input.comm { width: 75%; }
 input.w2 { width: 2ch; }
 input.w4 { width: 4ch; }
 input.w12 { width: 12ch; }
-span.atype { color: #c0c0c0; }
+span.atype { color: #b0b0b0; }
 table { border-spacing: 0; }
 table td { padding: 2px; }
 table.center { margin: auto; }
@@ -40,10 +41,10 @@ th.bal,td.bal { width: 15%; text-align: right; }
 th.opp,td.opp { width: 20%; text-align: right; }
 th.comm,td.comm { text-align: center; }
 tr.line { white-space: nowrap; }
-tr.sep td { border-top: 2px solid #f0f0f0; }
-tr.sep_month td { border-top: 2px solid #c0c0c0; }
+tr.sep td { border-top: 2px solid #e0e0e0; }
+tr.sep_month td { border-top: 2px solid #b0b0b0; }
 tr.sep_year td { border-top: 2px solid #808080; }
-tr.sep_tot td { border-top: 2px solid #c0c0c0; }
+tr.sep_tot td { border-top: 2px solid #b0b0b0; }
 """
 
 # a named tuple for storing HTML response components
