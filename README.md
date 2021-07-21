@@ -2,7 +2,7 @@
 A simple web-based double-entry bookkeeping system.
 
 ## Features
-- Account types: equity, assets, liabilities, income, and expenses.
+- Supports equity, assets, liabilities, income, and expenses accounts.
 - Currency-agnostic.
 - Arbitrary-precision integer arithmetic.
 - Encrypted database.
@@ -24,9 +24,11 @@ Pass a path to the database file in the `DB` environment variable.
 Decimal point, thousand separator, and style sheet are easily
 customized.
 
-## Note
-For performance reasons, the program does not support SQLCipher
-passphrases, and asks instead for raw keys, expected as 64-character
+## Notes
+* All monetary input fields — Debit, Credit and Balance — accept not
+mere numbers, but full arithmetic expressions.
+* For performance reasons, the program does not support SQLCipher
+passphrases, but asks instead for raw keys, expected as 64-character
 strings of hexadecimal digits.
 
 ## Compliance
