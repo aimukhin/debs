@@ -24,15 +24,13 @@ Pass a path to the database file in the `DB` environment variable.
 Decimal point, thousand separator, and style sheet are easily
 customized.
 
-## Notes
-* All monetary input fields — Debit, Credit and Balance — accept not
-mere numbers, but full arithmetic expressions.
-* For performance reasons, the program does not support SQLCipher
+## Note
+For performance reasons, the program does not support SQLCipher
 passphrases, but asks instead for raw keys, expected as 64-character
 strings of hexadecimal digits.
 
 ## Compliance
-The program produces HTML5 markup with a CSS3 style sheet.
+The program produces an HTML5 markup with a CSS3 style sheet.
 
 ## License
 MIT.

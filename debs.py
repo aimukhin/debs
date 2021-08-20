@@ -169,21 +169,6 @@ def cur2int(s):
         r=r+c
     return int(r+s[i+1:i+3].ljust(2,"0"))
 
-def arith(s):
-    """evaluate string as an arithmetic expression"""
-    try:
-        # normalize string
-        s=s.replace(" ","") # drop spaces
-        s=s.replace(DECIMAL_SEP,".") # use . as decimal point
-        # check that string contains only numbers, operators, and brackets
-        for c in s:
-            if not c in "0123456789.+-*/()":
-                raise ValueError
-        # now it's safe to evaluate it
-        return str(eval(s))
-    except Exception as e:
-        raise ValueError from e
-
 def int2cur(v):
     """convert integer to currency string"""
     s=str(abs(v))
@@ -575,13 +560,13 @@ def ins_xact(crs,environ):
     if dr=="":
         dr="0"
     try:
-        dr=cur2int(arith(dr))
+        dr=cur2int(dr)
     except ValueError as e:
         raise BadInput("Bad Dr") from e
     if cr=="":
         cr="0"
     try:
-        cr=cur2int(arith(cr))
+        cr=cur2int(cr)
     except ValueError as e:
         raise BadInput("Bad Cr") from e
     if dr<0:
@@ -596,7 +581,7 @@ def ins_xact(crs,environ):
         if newbal=="":
             raise BadInput("Set one of Dr, Cr, or Balance")
         try:
-            newbal=cur2int(arith(newbal))
+            newbal=cur2int(newbal)
         except ValueError as e:
             raise BadInput("Bad Balance") from e
     # check dates
