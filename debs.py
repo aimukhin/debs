@@ -1,6 +1,6 @@
 """
 Double-entry Bookkeeping System
-Copyright (c) 2021 Alexander Mukhin
+Copyright (c) 2022 Alexander Mukhin
 MIT License
 """
 
