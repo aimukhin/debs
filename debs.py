@@ -453,8 +453,8 @@ def acct(crs,qs):
             sep_class="sep"
         prev_year=x_year
         prev_month=x_month
-        crs.execute("SELECT type,name FROM accts WHERE aid=?",[oaid])
-        oatype,oaname=crs.fetchone()
+        crs.execute("SELECT type,name,cdt FROM accts WHERE aid=?",[oaid])
+        oatype,oaname,oacdt=crs.fetchone()
         b+="""
         <tr class="line {}">
         <td class=date>{}</td>
@@ -465,7 +465,8 @@ def acct(crs,qs):
         <td class=comm>&nbsp;<small>{}</small>
         """.format(sep_class,dt_d,dr,cr,x_bal,oatype,oaname,comment)
         # we can delete the transaction if it is the last one for both aid and oaid
-        if xid==maxxid:
+        # and both accounts are still open
+        if xid==maxxid and cdt==0 and oacdt==0:
             crs.execute("SELECT MAX(xid) FROM xacts WHERE aid=?",[oaid])
             if xid==res(crs):
                 b+="""
