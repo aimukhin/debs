@@ -336,10 +336,6 @@ def acct(crs,qs):
     crs.execute("SELECT name,cdt FROM accts WHERE aid=?",[aid])
     aname,cdt=crs.fetchone()
     bal=balance(crs,aid)
-    crs.execute("SELECT MAX(dt) FROM xacts WHERE aid=?",[aid])
-    maxdt=res(crs)
-    if maxdt is None:
-        maxdt=0
     crs.execute("SELECT MAX(xid) FROM xacts WHERE aid=?",[aid])
     maxxid=res(crs)
     if maxxid is None:
